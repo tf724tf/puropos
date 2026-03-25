@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PURO Pizza 點餐</title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .menu {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .item {
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    .item img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .selected {
+      border: 3px solid red;
+    }
+
+    .size {
+      margin-top: 20px;
+    }
+
+    button {
+      font-size: 22px;
+      padding: 15px;
+      margin-top: 20px;
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      background-color: black;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🍕 PURO Pizza</h1>
+
+<div class="menu">
+
+  <div class="item" onclick="selectItem('瑪格')">
+    <img src="https://images.unsplash.com/photo-1601924638867-3ec3a7c4a16d">
+    <p>瑪格麗特</p>
+  </div>
+
+  <div class="item" onclick="selectItem('燻雞')">
+    <img src="https://images.unsplash.com/photo-1601924577280-3c5d3c2a6c10">
+    <p>燻雞</p>
+  </div>
+
+</div>
+
+<div class="size">
+  <h3>選尺寸</h3>
+  <button onclick="selectSize('小')">小</button>
+  <button onclick="selectSize('大')">大</button>
+</div>
+
+<button onclick="submitOrder()">送出訂單</button>
+
+<script>
+let selectedItem = "";
+let selectedSize = "";
+
+// 選品項
+function selectItem(item) {
+  selectedItem = item;
+
+  document.querySelectorAll(".item").forEach(el => el.classList.remove("selected"));
+  event.currentTarget.classList.add("selected");
+}
+
+// 選尺寸
+function selectSize(size) {
+  selectedSize = size;
+  alert("已選：" + size);
+}
+
+// 送單
+async function submitOrder() {
+  if (!selectedItem || !selectedSize) {
+    alert("請選擇品項與尺寸");
+    return;
+  }
+
+  await fetch("http://localhost:3000/order", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      item: selectedItem,
+      size: selectedSize
+    })
+  });
+
+  alert("✅ 已送出訂單");
+
+  selectedItem = "";
+  selectedSize = "";
+}
+</script>
+
+</body>
+</html>

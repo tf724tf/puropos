@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PURO POS</title>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+
+    button {
+      font-size: 24px;
+      padding: 16px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: none;
+      width: 100%;
+    }
+
+    .pay-btn {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .done-btn {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .card {
+      padding: 20px;
+      margin: 20px 0;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1 id="status">🟢 正常</h1>
+
+<button onclick="createTest()">➕ 建立測試訂單</button>
+
+<h2>🧾 未收款</h2>
+<div id="pending"></div>
+
+<h2>🔥 製作中（前4單）</h2>
+<div id="making"></div>
+
+<h2>📋 排隊中</h2>
+<div id="waiting"></div>
+
+<script>
+
+// 建單
+async function createTest() {
+  await fetch("http://localhost:3000/order", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      item: "燻雞",
+      size: "大"
+    })
+  });
+
+  loadOrders();
+}
+
+// 讀資料
+async function loadOrders() {
+  const res = await fetch("http://localhost:3000/orders");
+  const data = await res.json();
+
+  // 壓力燈
+  const total = data.filter(o => o.status !== "done").length;
+  const status = document.getElementById("status");
+
+  if (total < 8) {
+    status.innerText = "🟢 正常";
+    status.style.color = "green";
+  } else if (total < 15) {
+    status.innerText = "🟡 忙碌中";
+    status.style.color = "orange";
+  } else {
+    status.innerText = "🔴 爆單了（建議延後接單）";
+    status.style.color = "red";
+  }
+
+  // 分類
+  const pending = data.filter(o => o.status === "pending");
+  const making = data.filter(o => o.status === "making").slice(0, 4);
+  const waiting = data.filter(o => o.status === "waiting");
+
+  // 未收款
+  const pendingDiv = document.getElementById("pending");
+  pendingDiv.innerHTML = "";
+
+  pending.forEach(o => {
+    pendingDiv.innerHTML += `
+      <div class="card">
+        <h3>${o.id}</h3>
+        <p>${o.item} ${o.size}</p>
+        <button class="pay-btn" onclick="pay('${o.id}')">💰 收款</button>
+      </div>
+    `;
+  });
+
+  // 製作中
+  const makingDiv = document.getElementById("making");
+  makingDiv.innerHTML = "";
+
+  making.forEach((o, i) => {
+    makingDiv.innerHTML += `
+      <div class="card">
+        <h2>#${i+1} ${o.id}</h2>
+        <p>${o.item} ${o.size}</p>
+        <button class="done-btn" onclick="done('${o.id}')">完成</button>
+      </div>
+    `;
+  });
+
+  // 排隊中
+  const waitingDiv = document.getElementById("waiting");
+  waitingDiv.innerHTML = "";
+
+  waiting.forEach((o, i) => {
+    waitingDiv.innerHTML += `
+      <div>
+        ${i+1}. ${o.id} - ${o.item} ${o.size}
+      </div>
+    `;
+  });
+}
+
+// 收款
+async function pay(id) {
+  await fetch("http://localhost:3000/pay/" + id, { method: "POST" });
+  loadOrders();
+}
+
+// 完成
+async function done(id) {
+  await fetch("http://localhost:3000/done/" + id, { method: "POST" });
+  loadOrders();
+}
+
+// 自動刷新
+setInterval(loadOrders, 2000);
+loadOrders();
+
+</script>
+
+</body>
+</html>

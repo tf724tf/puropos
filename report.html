@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>報表</title>
+</head>
+<body>
+
+<h1>📊 營業報表</h1>
+
+<h2 id="today"></h2>
+<h2 id="all"></h2>
+
+<script>
+async function loadReport() {
+
+  const today = await fetch("/report/today").then(r => r.json());
+  const all = await fetch("/report/all").then(r => r.json());
+
+  document.getElementById("today").innerText =
+    "今日營業額：" + (today.total || 0);
+
+  document.getElementById("all").innerText =
+    "總營業額：" + (all.total || 0);
+}
+
+loadReport();
+</script>
+
+</body>
+</html>
