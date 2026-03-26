@@ -1,155 +1,256 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-  <title>PURO POS</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-    }
+<title>PURO POS 後台</title>
 
-    button {
-      font-size: 24px;
-      padding: 16px;
-      margin: 10px 0;
-      border-radius: 10px;
-      border: none;
-      width: 100%;
-    }
+<style>
 
-    .pay-btn {
-      background-color: #28a745;
-      color: white;
-    }
+body{
+  font-family:sans-serif;
+  margin:0;
+  background:#f5f5f5;
+}
 
-    .done-btn {
-      background-color: #007bff;
-      color: white;
-    }
+.wrap{
+  max-width:1200px;
+  margin:auto;
+  padding:20px;
+}
 
-    .card {
-      padding: 20px;
-      margin: 20px 0;
-      border: 2px solid #ddd;
-      border-radius: 12px;
-    }
+h1{
+  margin:0 0 10px;
+}
 
-    .price {
-      font-size: 22px;
-      font-weight: 700;
-      color: #c24d00;
-      margin: 8px 0 12px;
-    }
+.topbar{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+}
 
-    .item-line {
-      margin: 4px 0;
-      color: #333;
-    }
-  </style>
+.btn{
+  padding:10px 16px;
+  border-radius:8px;
+  border:none;
+  background:black;
+  color:white;
+  cursor:pointer;
+}
+
+.section{
+  background:white;
+  padding:15px;
+  border-radius:12px;
+  margin-bottom:15px;
+}
+
+.order{
+  border-bottom:1px solid #eee;
+  padding:10px 0;
+}
+
+.price{
+  color:#c95a00;
+  font-weight:bold;
+}
+
+</style>
+
 </head>
-
 <body>
-<div style="margin-bottom:16px;">
-  <a href="/report.html" target="_blank" style="font-size:20px; text-decoration:none;">
-    📊 查看銷售報表 / 歷史交易
-  </a>
-</div>
-<h1 id="status">🟢 正常</h1>
 
-<h2>🧾 未收款</h2>
+<div class="wrap">
+
+<h1>PURO POS 後台</h1>
+
+<div class="topbar">
+
+<button class="btn" onclick="loadOrders()">刷新</button>
+
+<a href="/order.html" target="_blank">
+<button class="btn">客人點餐頁</button>
+</a>
+
+<a href="/report.html" target="_blank">
+<button class="btn">銷售報表</button>
+</a>
+
+<button class="btn" onclick="createTest()">建立測試訂單</button>
+
+</div>
+
+
+<div class="section">
+
+<h2>未收款</h2>
+
 <div id="pending"></div>
 
-<h2>🔥 製作中（前4單）</h2>
+</div>
+
+
+<div class="section">
+
+<h2>製作中 (前4單)</h2>
+
 <div id="making"></div>
 
-<h2>📋 排隊中</h2>
+</div>
+
+
+<div class="section">
+
+<h2>排隊中</h2>
+
 <div id="waiting"></div>
 
+</div>
+
+
+<div class="section">
+
+<h2>完成</h2>
+
+<div id="done"></div>
+
+</div>
+
+
+</div>
+
+
+
 <script>
-async function loadOrders() {
-  const res = await fetch("/orders");
-  const data = await res.json();
 
-  const total = data.filter(o => o.status !== "done").length;
-  const status = document.getElementById("status");
 
-  if (total < 8) {
-    status.innerText = "🟢 正常";
-    status.style.color = "green";
-  } else if (total < 15) {
-    status.innerText = "🟡 忙碌中";
-    status.style.color = "orange";
-  } else {
-    status.innerText = "🔴 爆單了（建議延後接單）";
-    status.style.color = "red";
-  }
+async function loadOrders(){
 
-  const pending = data.filter(o => o.status === "pending");
-  const making = data.filter(o => o.status === "making").slice(0, 4);
-  const waiting = data.filter(o => o.status === "waiting");
+  const res = await fetch("/orders")
+  const orders = await res.json()
 
-  const pendingDiv = document.getElementById("pending");
-  pendingDiv.innerHTML = "";
+  const pending = document.getElementById("pending")
+  const making = document.getElementById("making")
+  const waiting = document.getElementById("waiting")
+  const done = document.getElementById("done")
 
-  pending.forEach(o => {
-    const itemsHtml = (o.items || []).map(item => `
-      <div class="item-line">- ${item.name}｜${item.size}｜$${item.price}</div>
-    `).join("");
+  pending.innerHTML=""
+  making.innerHTML=""
+  waiting.innerHTML=""
+  done.innerHTML=""
 
-    pendingDiv.innerHTML += `
-      <div class="card">
-        <h3>${o.id}</h3>
-        ${itemsHtml}
-        <div class="price">總價：$${o.price || 0}</div>
-        <button class="pay-btn" onclick="pay('${o.id}')">💰 收款</button>
-      </div>
-    `;
-  });
 
-  const makingDiv = document.getElementById("making");
-  makingDiv.innerHTML = "";
+  orders.forEach(o=>{
 
-  making.forEach((o, i) => {
-    const itemsHtml = (o.items || []).map(item => `
-      <div class="item-line">- ${item.name}｜${item.size}</div>
-    `).join("");
+    const div = document.createElement("div")
+    div.className="order"
 
-    makingDiv.innerHTML += `
-      <div class="card">
-        <h2>#${i+1} ${o.id}</h2>
-        ${itemsHtml}
-        <div class="price">總價：$${o.price || 0}</div>
-        <button class="done-btn" onclick="done('${o.id}')">完成</button>
-      </div>
-    `;
-  });
+    const items = (o.items||[])
+      .map(i=>`${i.name} ${i.size} $${i.price}`)
+      .join("<br>")
 
-  const waitingDiv = document.getElementById("waiting");
-  waitingDiv.innerHTML = "";
 
-  waiting.forEach((o, i) => {
-    waitingDiv.innerHTML += `
-      <div class="card">
-        <div>${i+1}. ${o.id}</div>
-        <div class="price">總價：$${o.price || 0}</div>
-      </div>
-    `;
-  });
+    div.innerHTML = `
+
+      <b>${o.id}</b><br>
+
+      ${items}<br>
+
+      <span class="price">$${o.price}</span><br>
+
+    `
+
+
+    if(o.status=="pending"){
+
+      div.innerHTML += `
+      <button onclick="pay('${o.id}')">收款</button>
+      `
+
+      pending.appendChild(div)
+
+    }
+
+
+    else if(o.status=="making"){
+
+      div.innerHTML += `
+      <button onclick="doneOrder('${o.id}')">完成</button>
+      `
+
+      making.appendChild(div)
+
+    }
+
+
+    else if(o.status=="waiting"){
+
+      waiting.appendChild(div)
+
+    }
+
+
+    else if(o.status=="done"){
+
+      done.appendChild(div)
+
+    }
+
+  })
+
 }
 
-async function pay(id) {
-  await fetch("/pay/" + id, { method: "POST" });
-  loadOrders();
+
+async function pay(id){
+
+  await fetch("/pay/"+id,{method:"POST"})
+  loadOrders()
+
 }
 
-async function done(id) {
-  await fetch("/done/" + id, { method: "POST" });
-  loadOrders();
+
+async function doneOrder(id){
+
+  await fetch("/done/"+id,{method:"POST"})
+  loadOrders()
+
 }
 
-setInterval(loadOrders, 2000);
-loadOrders();
+
+async function createTest(){
+
+  await fetch("/order",{
+
+    method:"POST",
+
+    headers:{
+      "Content-Type":"application/json"
+    },
+
+    body:JSON.stringify({
+
+      items:[
+        {name:"測試Pizza",size:"圓形",price:200}
+      ],
+
+      price:200
+
+    })
+
+  })
+
+  loadOrders()
+
+}
+
+
+
+loadOrders()
+
+setInterval(loadOrders,2000)
+
+
 </script>
 
 </body>
