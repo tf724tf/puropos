@@ -233,36 +233,30 @@ async function doneOrder(id){
 }
 
 async function deleteOrder(id){
-  const reason = prompt("請輸入刪除原因", "客人取消");
-  if(reason === null) return;
+  const reason = prompt("請輸入刪除原因（必填）", "");
+
+  if (reason === null) return;
+
+  const finalReason = reason.trim();
+
+  if (!finalReason) {
+    alert("刪單一定要填原因");
+    return;
+  }
 
   await fetch("/delete/" + id, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ reason })
-  });
-
-  loadOrders();
-}
-
-async function createTest(){
-  await fetch("/order", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
-      items: [
-        { name:"測試Pizza", size:"圓形", price:200 }
-      ],
-      price:200
+      reason: finalReason
     })
   });
 
   loadOrders();
 }
 
-loadOrders();
-setInterval(loadOrders, 2000);
-</script>
 async function editOrder(id){
   const res = await fetch("/order/" + id);
   const order = await res.json();
@@ -338,5 +332,25 @@ async function editOrder(id){
 
   loadOrders();
 }
+
+async function createTest(){
+  await fetch("/order", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      items: [
+        { name:"測試Pizza", size:"圓形", price:200 }
+      ],
+      price:200
+    })
+  });
+
+  loadOrders();
+}
+
+loadOrders();
+setInterval(loadOrders, 2000);
+</script>
+
 </body>
 </html>
