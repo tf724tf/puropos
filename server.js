@@ -11,29 +11,58 @@ app.use(express.static(__dirname));
 
 const db = new sqlite3.Database("./orders.db");
 
-db.run(`
-CREATE TABLE IF NOT EXISTS orders (
-  id TEXT PRIMARY KEY,
-  item TEXT,
-  size TEXT,
-  price INTEGER,
-  status TEXT,
-  createdAt INTEGER
-)
-`);
+// 新版資料表：items 存整張訂單內容（JSON字串）
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id TEXT PRIMARY KEY,
+      items TEXT,
+      price INTEGER,
+      status TEXT,
+      createdAt INTEGER
+    )
+  `);
+
+  // 兼容舊表：如果原本沒有 items 欄位，補上
+  db.all(`PRAGMA table_info(orders)`, (err, columns) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    const columnNames = columns.map(c => c.name);
+
+    if (!columnNames.includes("items")) {
+      db.run(`ALTER TABLE orders ADD COLUMN items TEXT`);
+    }
+
+    if (!columnNames.includes("price")) {
+      db.run(`ALTER TABLE orders ADD COLUMN price INTEGER DEFAULT 0`);
+    }
+
+    if (!columnNames.includes("createdAt")) {
+      db.run(`ALTER TABLE orders ADD COLUMN createdAt INTEGER`);
+    }
+  });
+});
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "admin.html"));
 });
 
+// 建立訂單：一次送多品項
 app.post("/order", (req, res) => {
-  const { item, size, price } = req.body;
+  const { items, price } = req.body;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "items 不可為空" });
+  }
 
   const id = "A" + Date.now().toString().slice(-4);
 
   db.run(
-    `INSERT INTO orders VALUES (?, ?, ?, ?, ?, ?)`,
-    [id, item, size, price || 0, "pending", Date.now()],
+    `INSERT INTO orders (id, items, price, status, createdAt) VALUES (?, ?, ?, ?, ?)`,
+    [id, JSON.stringify(items), price || 0, "pending", Date.now()],
     (err) => {
       if (err) {
         console.error(err);
@@ -51,7 +80,22 @@ app.get("/orders", (req, res) => {
       console.error(err);
       return res.status(500).json({ error: "讀取訂單失敗" });
     }
-    res.json(rows);
+
+    const parsedRows = rows.map(row => {
+      let parsedItems = [];
+      try {
+        parsedItems = row.items ? JSON.parse(row.items) : [];
+      } catch {
+        parsedItems = [];
+      }
+
+      return {
+        ...row,
+        items: parsedItems
+      };
+    });
+
+    res.json(parsedRows);
   });
 });
 
@@ -111,7 +155,22 @@ app.get("/order/:id", (req, res) => {
       console.error(err);
       return res.status(500).json({ error: "讀取單筆訂單失敗" });
     }
-    res.json(row);
+
+    if (!row) {
+      return res.status(404).json({ error: "找不到訂單" });
+    }
+
+    let parsedItems = [];
+    try {
+      parsedItems = row.items ? JSON.parse(row.items) : [];
+    } catch {
+      parsedItems = [];
+    }
+
+    res.json({
+      ...row,
+      items: parsedItems
+    });
   });
 });
 
