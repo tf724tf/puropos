@@ -8,117 +8,128 @@
     body {
       font-family: sans-serif;
       margin: 0;
-      background: #f7f7f7;
+      background: #f5f5f5;
       color: #222;
     }
 
     .wrap {
       max-width: 900px;
       margin: 0 auto;
-      padding: 20px 20px 100px;
+      padding: 20px 20px 120px;
     }
 
     h1 {
       text-align: center;
-      margin: 8px 0 4px;
+      margin: 8px 0 6px;
+      font-size: 34px;
     }
 
     .sub {
       text-align: center;
       color: #666;
+      font-size: 16px;
       margin-bottom: 20px;
     }
 
     .section {
       background: white;
-      border-radius: 16px;
+      border-radius: 20px;
       padding: 18px;
       margin-bottom: 18px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
 
-    .section h2 {
-      margin: 0 0 14px;
-      font-size: 24px;
+    .tabs {
+      display: flex;
+      gap: 12px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 16px;
+      font-size: 18px;
+      border-radius: 16px;
+      border: 2px solid #ccc;
+      background: white;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .tab-btn.active {
+      background: black;
+      color: white;
+      border-color: black;
     }
 
     .grid {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 12px;
+      gap: 16px;
+      margin-top: 18px;
     }
 
     .item-card {
       border: 2px solid #ddd;
-      border-radius: 14px;
-      padding: 14px;
-      background: #fff;
+      border-radius: 18px;
+      padding: 18px;
+      background: white;
     }
 
     .item-title {
       font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 6px;
+      font-weight: 800;
+      margin-bottom: 8px;
     }
 
     .item-desc {
-      font-size: 15px;
       color: #666;
-      margin-bottom: 8px;
-      line-height: 1.4;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      font-size: 15px;
     }
 
     .price-row {
+      color: #c95a00;
+      font-weight: 800;
       font-size: 18px;
-      font-weight: 700;
-      color: #c24d00;
-      margin-bottom: 10px;
+      margin-bottom: 14px;
     }
 
     .btn-row {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
     }
 
-    button {
-      font-size: 18px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-    }
-
     .add-btn {
+      border: none;
       background: black;
       color: white;
-      min-width: 120px;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 12px;
+      border-radius: 14px;
+      padding: 14px 18px;
       font-size: 18px;
-      border-radius: 12px;
-      border: 2px solid #ccc;
-      background: white;
       cursor: pointer;
+      min-width: 150px;
+      font-weight: 700;
     }
 
-    .tab-btn.active {
-      border-color: #000;
-      background: #000;
-      color: white;
+    .add-btn small {
+      display: block;
+      font-size: 13px;
+      opacity: 0.75;
+      margin-top: 2px;
+      font-weight: 400;
     }
 
-    .tabs {
-      display: flex;
-      gap: 10px;
+    .cart-title {
+      font-size: 24px;
+      font-weight: 800;
       margin-bottom: 14px;
     }
 
-    .hidden {
-      display: none;
+    .empty {
+      color: #999;
+      font-size: 16px;
     }
 
     .cart-item {
@@ -130,7 +141,7 @@
       display: flex;
       justify-content: space-between;
       gap: 12px;
-      align-items: center;
+      align-items: flex-start;
     }
 
     .cart-name {
@@ -138,67 +149,72 @@
       font-weight: 700;
     }
 
-    .cart-price {
-      font-size: 18px;
-      font-weight: 700;
-      color: #c24d00;
-      white-space: nowrap;
-    }
-
     .cart-meta {
       color: #666;
       margin-top: 4px;
     }
 
+    .cart-price {
+      color: #c95a00;
+      font-weight: 800;
+      white-space: nowrap;
+      font-size: 18px;
+    }
+
     .remove-btn {
-      margin-top: 8px;
+      margin-top: 10px;
+      border: none;
       background: #ddd;
       color: #222;
-      font-size: 15px;
+      border-radius: 10px;
       padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
     }
 
     .checkout-bar {
-      position: sticky;
+      position: fixed;
+      left: 0;
+      right: 0;
       bottom: 0;
-      background: #fff;
+      background: white;
       border-top: 1px solid #ddd;
-      padding: 16px;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+      padding: 14px 18px;
     }
 
     .checkout-wrap {
       max-width: 900px;
       margin: 0 auto;
       display: flex;
-      gap: 12px;
       align-items: center;
       justify-content: space-between;
+      gap: 16px;
     }
 
     .total {
       font-size: 24px;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .submit-btn {
-      font-size: 22px;
-      padding: 16px 22px;
+      border: none;
       background: black;
       color: white;
+      border-radius: 14px;
+      padding: 16px 24px;
+      font-size: 22px;
+      font-weight: 800;
+      cursor: pointer;
       min-width: 220px;
-    }
-
-    .empty {
-      color: #888;
     }
 
     .success-box {
       background: #eaf8ea;
       border: 2px solid #7bc67b;
-      color: #135e13;
-      border-radius: 16px;
-      padding: 18px;
+      color: #145c14;
+      border-radius: 18px;
+      padding: 20px;
       text-align: center;
       margin-bottom: 18px;
     }
@@ -210,8 +226,12 @@
 
     .pickup-number {
       font-size: 42px;
-      font-weight: 800;
+      font-weight: 900;
       margin: 8px 0;
+    }
+
+    .hidden {
+      display: none;
     }
   </style>
 </head>
@@ -229,21 +249,21 @@
 
     <div class="section">
       <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('pizza')">Pizza</button>
-        <button class="tab-btn" onclick="switchTab('drink')">飲料 / 冰淇淋</button>
+        <button id="tab-pizza" class="tab-btn active" onclick="switchTab('pizza')">Pizza</button>
+        <button id="tab-drink" class="tab-btn" onclick="switchTab('drink')">飲料 / 冰淇淋</button>
       </div>
 
       <div id="pizza-tab">
-        <div class="grid" id="pizza-list"></div>
+        <div id="pizza-list" class="grid"></div>
       </div>
 
       <div id="drink-tab" class="hidden">
-        <div class="grid" id="drink-list"></div>
+        <div id="drink-list" class="grid"></div>
       </div>
     </div>
 
     <div class="section">
-      <h2>購物車</h2>
+      <div class="cart-title">購物車</div>
       <div id="cart-list" class="empty">尚未加入任何品項</div>
     </div>
   </div>
@@ -260,37 +280,37 @@
       {
         name: "瑪格莉特披薩",
         desc: "茄汁｜新鮮羅勒葉｜莫札瑞拉起司",
-        prices: { "方形": 190, "圓形": 270 }
+        prices: { square: 190, round: 270 }
       },
       {
         name: "佛羅提納披薩",
         desc: "茄汁｜培根｜菠菜｜蛋｜莫札瑞拉起司｜帕馬森",
-        prices: { "方形": 220, "圓形": 290 }
+        prices: { square: 220, round: 290 }
       },
       {
         name: "薩拉米臘腸披薩",
         desc: "茄汁｜義大利臘香腸｜莫札瑞拉起司｜帕馬森",
-        prices: { "方形": 220, "圓形": 290 }
+        prices: { square: 220, round: 290 }
       },
       {
         name: "四種起司披薩",
         desc: "切達起司｜煙燻起司｜莫札瑞拉起司｜帕馬森",
-        prices: { "方形": 210, "圓形": 280 }
+        prices: { square: 210, round: 280 }
       },
       {
         name: "燻雞野菇披薩",
-        desc: "茄汁/切達起司｜燻雞｜培根｜蘑菇｜莫札瑞拉起司｜帕馬森",
-        prices: { "方形": 220, "圓形": 290 }
+        desc: "茄汁 / 切達起司｜燻雞｜培根｜蘑菇｜莫札瑞拉起司｜帕馬森",
+        prices: { square: 220, round: 290 }
       },
       {
         name: "海鮮總匯披薩",
         desc: "茄汁｜切達起司｜綜合海鮮｜莫札瑞拉起司｜帕馬森",
-        prices: { "方形": 240, "圓形": 320 }
+        prices: { square: 240, round: 320 }
       }
     ];
 
     const drinks = [
-      { name: "湧金啤酒", desc: "黃金／琥珀／檸檬", price: 120 },
+      { name: "湧金啤酒", desc: "黃金 / 琥珀 / 檸檬", price: 120 },
       { name: "莫雷帝啤酒", desc: "Birra Moretti", price: 100 },
       { name: "SAPPORO 生啤酒 黑標", desc: "", price: 180 },
       { name: "維恩雪弗 1516", desc: "瓶裝鮮啤酒", price: 170 },
@@ -307,79 +327,21 @@
 
     function switchTab(tab) {
       currentTab = tab;
+
       document.getElementById("pizza-tab").classList.toggle("hidden", tab !== "pizza");
       document.getElementById("drink-tab").classList.toggle("hidden", tab !== "drink");
-      document.querySelectorAll(".tab-btn")[0].classList.toggle("active", tab === "pizza");
-      document.querySelectorAll(".tab-btn")[1].classList.toggle("active", tab === "drink");
-    }
 
-    function renderPizzaList() {
-      const list = document.getElementById("pizza-list");
-      list.innerHTML = "";
-
-      pizzas.forEach((item) => {
-        const div = document.createElement("div");
-        div.className = "item-card";
-        div.innerHTML = `
-  <div class="item-title">${item.name}</div>
-  <div class="item-desc">${item.desc}</div>
-
-  <div class="price-row">
-    方形 $${item.prices["方形"]}｜圓形 $${item.prices["圓形"]}
-  </div>
-
-  <div class="btn-row">
-
-    <button class="add-btn"
-      onclick='addPizza(${JSON.stringify(item.name)}, "方形", ${item.prices["方形"]})'>
-      方形
-      <span style="font-size:14px;opacity:0.7;">(15×24CM)</span>
-    </button>
-
-    <button class="add-btn"
-      onclick='addPizza(${JSON.stringify(item.name)}, "圓形", ${item.prices["圓形"]})'>
-      圓形
-      <span style="font-size:14px;opacity:0.7;">(9吋)</span>
-    </button>
-
-  </div>
-`;
-    }
-
-    function renderDrinkList() {
-      const list = document.getElementById("drink-list");
-      list.innerHTML = "";
-
-      drinks.forEach((item) => {
-        const div = document.createElement("div");
-        div.className = "item-card";
-        div.innerHTML = `
-          <div class="item-title">${item.name}</div>
-          <div class="item-desc">${item.desc}</div>
-          <div class="price-row">$${item.price}</div>
-          <div class="btn-row">
-            <button class="add-btn" onclick='addDrink(${JSON.stringify(item.name)}, ${JSON.stringify(item.desc)}, ${item.price})'>加入購物車</button>
-          </div>
-        `;
-        list.appendChild(div);
-      });
+      document.getElementById("tab-pizza").classList.toggle("active", tab === "pizza");
+      document.getElementById("tab-drink").classList.toggle("active", tab === "drink");
     }
 
     function addPizza(name, size, price) {
-      cart.push({
-        name,
-        size,
-        price
-      });
+      cart.push({ name, size, price });
       renderCart();
     }
 
-    function addDrink(name, desc, price) {
-      cart.push({
-        name,
-        size: "單品",
-        price
-      });
+    function addDrink(name, price) {
+      cart.push({ name, size: "單品", price });
       renderCart();
     }
 
@@ -388,19 +350,63 @@
       renderCart();
     }
 
+    function renderPizzaList() {
+      const list = document.getElementById("pizza-list");
+      list.innerHTML = "";
+
+      pizzas.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "item-card";
+        div.innerHTML = `
+          <div class="item-title">${item.name}</div>
+          <div class="item-desc">${item.desc}</div>
+          <div class="price-row">方形 $${item.prices.square}｜圓形 $${item.prices.round}</div>
+          <div class="btn-row">
+            <button class="add-btn" onclick="addPizza('${item.name}', '方形', ${item.prices.square})">
+              方形
+              <small>(15×24CM)</small>
+            </button>
+            <button class="add-btn" onclick="addPizza('${item.name}', '圓形', ${item.prices.round})">
+              圓形
+              <small>(9吋)</small>
+            </button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderDrinkList() {
+      const list = document.getElementById("drink-list");
+      list.innerHTML = "";
+
+      drinks.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "item-card";
+        div.innerHTML = `
+          <div class="item-title">${item.name}</div>
+          <div class="item-desc">${item.desc}</div>
+          <div class="price-row">$${item.price}</div>
+          <div class="btn-row">
+            <button class="add-btn" onclick="addDrink('${item.name}', ${item.price})">加入購物車</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
     function renderCart() {
       const cartList = document.getElementById("cart-list");
       const totalPrice = document.getElementById("total-price");
 
       if (cart.length === 0) {
-        cartList.innerHTML = "尚未加入任何品項";
         cartList.className = "empty";
+        cartList.innerHTML = "尚未加入任何品項";
         totalPrice.innerText = "$0";
         return;
       }
 
       cartList.className = "";
-
       cartList.innerHTML = cart.map((item, index) => `
         <div class="cart-item">
           <div class="cart-top">
