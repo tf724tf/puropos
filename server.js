@@ -170,7 +170,6 @@ app.post("/done/:id", (req, res) => {
   );
 });
 
-// 退單：保留紀錄
 app.post("/refund/:id", (req, res) => {
   db.run(
     `UPDATE orders
@@ -189,7 +188,31 @@ app.post("/refund/:id", (req, res) => {
   );
 });
 
-// 刪單：保留紀錄
+app.post("/delete/:id", (req, res) => {
+  const { reason } = req.body || {};
+
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ error: "刪除原因必填" });
+  }
+
+  db.run(
+    `UPDATE orders
+     SET status='deleted',
+         deleteReason=?,
+         deletedAt=?
+     WHERE id=?`,
+    [reason.trim(), Date.now(), req.params.id],
+    (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "刪除訂單失敗" });
+      }
+      res.json({ success: true });
+    }
+  );
+});
+
+// 修改未收款訂單
 app.post("/update-order/:id", (req, res) => {
   const { items } = req.body || {};
 
@@ -214,25 +237,6 @@ app.post("/update-order/:id", (req, res) => {
         return res.status(500).json({ error: "修改訂單失敗" });
       }
 
-      res.json({ success: true });
-    }
-  );
-});
-app.post("/delete/:id", (req, res) => {
-  const { reason } = req.body || {};
-
-  db.run(
-    `UPDATE orders
-     SET status='deleted',
-         deleteReason=?,
-         deletedAt=?
-     WHERE id=?`,
-    [reason || "手動刪除", Date.now(), req.params.id],
-    (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: "刪除訂單失敗" });
-      }
       res.json({ success: true });
     }
   );
