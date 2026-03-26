@@ -1,356 +1,329 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<title>PURO POS 後台</title>
-
-<style>
-body{
-  font-family:sans-serif;
-  margin:0;
-  background:#f5f5f5;
-}
-
-.wrap{
-  max-width:1200px;
-  margin:auto;
-  padding:20px;
-}
-
-h1{
-  margin:0 0 10px;
-}
-
-.topbar{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:15px;
-}
-
-.btn{
-  padding:14px 20px;
-  border-radius:10px;
-  border:none;
-  background:black;
-  color:white;
-  cursor:pointer;
-  font-size:20px;
-  font-weight:700;
-}
-
-.section{
-  background:white;
-  padding:20px;
-  border-radius:16px;
-  margin-bottom:18px;
-}
-
-.section h2{
-  margin-top:0;
-  font-size:24px;
-}
-
-.order{
-  border-bottom:1px solid #eee;
-  padding:14px 0;
-}
-
-.order:last-child{
-  border-bottom:none;
-}
-
-.order-id{
-  font-size:22px;
-  font-weight:800;
-  margin-bottom:8px;
-}
-
-.item-line{
-  margin:4px 0;
-  font-size:18px;
-}
-
-.price{
-  color:#c95a00;
-  font-weight:bold;
-  font-size:28px;
-  margin:10px 0;
-}
-
-.action-row{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-  margin-top:12px;
-}
-
-.pay-btn,
-.done-btn,
-.delete-btn{
-  border:none;
-  border-radius:14px;
-  cursor:pointer;
-  min-width:180px;
-  padding:18px 24px;
-  font-size:26px;
-  font-weight:800;
-}
-
-.pay-btn{
-  background:#1f9d55;
-  color:white;
-}
-
-.done-btn{
-  background:#2563eb;
-  color:white;
-}
-
-.delete-btn{
-  background:#dc2626;
-  color:white;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PURO POS 後台</title>
+  <style>
+    body{
+      font-family:sans-serif;
+      margin:0;
+      background:#f5f5f5;
+    }
+    .wrap{
+      max-width:1200px;
+      margin:auto;
+      padding:20px;
+    }
+    h1{
+      margin:0 0 10px;
+    }
+    .topbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:15px;
+    }
+    .btn{
+      padding:14px 20px;
+      border-radius:10px;
+      border:none;
+      background:black;
+      color:white;
+      cursor:pointer;
+      font-size:20px;
+      font-weight:700;
+    }
+    .section{
+      background:white;
+      padding:20px;
+      border-radius:16px;
+      margin-bottom:18px;
+    }
+    .section h2{
+      margin-top:0;
+      font-size:24px;
+    }
+    .order{
+      border-bottom:1px solid #eee;
+      padding:14px 0;
+    }
+    .order:last-child{
+      border-bottom:none;
+    }
+    .order-id{
+      font-size:22px;
+      font-weight:800;
+      margin-bottom:8px;
+    }
+    .item-line{
+      margin:4px 0;
+      font-size:18px;
+    }
+    .price{
+      color:#c95a00;
+      font-weight:bold;
+      font-size:28px;
+      margin:10px 0;
+    }
+    .action-row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .pay-btn,
+    .done-btn,
+    .delete-btn,
+    .edit-btn{
+      border:none;
+      border-radius:14px;
+      cursor:pointer;
+      min-width:180px;
+      padding:18px 24px;
+      font-size:26px;
+      font-weight:800;
+    }
+    .pay-btn{
+      background:#1f9d55;
+      color:white;
+    }
+    .done-btn{
+      background:#2563eb;
+      color:white;
+    }
+    .delete-btn{
+      background:#dc2626;
+      color:white;
+    }
+    .edit-btn{
+      background:#f59e0b;
+      color:white;
+    }
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <h1>PURO POS 後台</h1>
 
-<div class="wrap">
+    <div class="topbar">
+      <button class="btn" onclick="loadOrders()">刷新</button>
 
-<h1>PURO POS 後台</h1>
+      <a href="/order.html" target="_blank">
+        <button class="btn">客人點餐頁</button>
+      </a>
 
-<div class="topbar">
-  <button class="btn" onclick="loadOrders()">刷新</button>
+      <a href="/report.html" target="_blank">
+        <button class="btn">銷售報表</button>
+      </a>
 
-  <a href="/order.html" target="_blank">
-    <button class="btn">客人點餐頁</button>
-  </a>
-
-  <a href="/report.html" target="_blank">
-    <button class="btn">銷售報表</button>
-  </a>
-
-  <button class="btn" onclick="createTest()">建立測試訂單</button>
-</div>
-
-<div class="section">
-  <h2>未收款</h2>
-  <div id="pending"></div>
-</div>
-
-<div class="section">
-  <h2>製作中（前4單）</h2>
-  <div id="making"></div>
-</div>
-
-<div class="section">
-  <h2>排隊中</h2>
-  <div id="waiting"></div>
-</div>
-
-<div class="section">
-  <h2>完成</h2>
-  <div id="done"></div>
-</div>
-
-</div>
-
-<script>
-function renderItems(items){
-  return (items || []).map(i => `
-    <div class="item-line">${i.name} ${i.size} $${i.price}</div>
-  `).join("");
-}
-
-function buildOrderHtml(o, type){
-  let buttons = "";
-
-  if(type === "pending"){
-    buttons = `
-      <div class="action-row">
-        <button class="pay-btn" onclick="pay('${o.id}')">💰 收款</button>
-        <button class="done-btn" onclick="editOrder('${o.id}')">✏️ 修改</button>
-        <button class="delete-btn" onclick="deleteOrder('${o.id}')">🗑 刪除</button>
-      </div>
-    `;
-  }
-
-  if(type === "making"){
-    buttons = `
-      <div class="action-row">
-        <button class="done-btn" onclick="doneOrder('${o.id}')">✅ 完成</button>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="order">
-      <div class="order-id">${o.id}</div>
-      ${renderItems(o.items)}
-      <div class="price">$${o.price || 0}</div>
-      ${buttons}
+      <button class="btn" onclick="createTest()">建立測試訂單</button>
     </div>
-  `;
-}
 
-async function loadOrders(){
-  const res = await fetch("/orders");
-  const orders = await res.json();
+    <div class="section">
+      <h2>未收款</h2>
+      <div id="pending"></div>
+    </div>
 
-  const pending = document.getElementById("pending");
-  const making = document.getElementById("making");
-  const waiting = document.getElementById("waiting");
-  const done = document.getElementById("done");
+    <div class="section">
+      <h2>製作中（前4單）</h2>
+      <div id="making"></div>
+    </div>
 
-  pending.innerHTML = "";
-  making.innerHTML = "";
-  waiting.innerHTML = "";
-  done.innerHTML = "";
+    <div class="section">
+      <h2>排隊中</h2>
+      <div id="waiting"></div>
+    </div>
 
-  orders.forEach(o => {
-    if(o.status === "pending"){
-      pending.innerHTML += buildOrderHtml(o, "pending");
-    } else if(o.status === "making"){
-      making.innerHTML += buildOrderHtml(o, "making");
-    } else if(o.status === "waiting"){
-      waiting.innerHTML += buildOrderHtml(o, "waiting");
-    } else if(o.status === "done"){
-      done.innerHTML += buildOrderHtml(o, "done");
+    <div class="section">
+      <h2>完成</h2>
+      <div id="done"></div>
+    </div>
+  </div>
+
+  <script>
+    function renderItems(items){
+      return (items || []).map(i => `
+        <div class="item-line">${i.name} ${i.size} $${i.price}</div>
+      `).join("");
     }
-  });
-}
 
-async function pay(id){
-  await fetch("/pay/" + id, { method:"POST" });
-  loadOrders();
-}
+    function buildOrderHtml(o, type){
+      let buttons = "";
 
-async function doneOrder(id){
-  await fetch("/done/" + id, { method:"POST" });
-  loadOrders();
-}
+      if(type === "pending"){
+        buttons = `
+          <div class="action-row">
+            <button class="pay-btn" onclick="pay('${o.id}')">💰 收款</button>
+            <button class="edit-btn" onclick="editOrder('${o.id}')">✏️ 修改</button>
+            <button class="delete-btn" onclick="deleteOrder('${o.id}')">🗑 刪除</button>
+          </div>
+        `;
+      }
 
-async function deleteOrder(id){
-  const reason = prompt("請輸入刪除原因（必填）", "");
+      if(type === "making"){
+        buttons = `
+          <div class="action-row">
+            <button class="done-btn" onclick="doneOrder('${o.id}')">✅ 完成</button>
+          </div>
+        `;
+      }
 
-  if (reason === null) return;
+      return `
+        <div class="order">
+          <div class="order-id">${o.id}</div>
+          ${renderItems(o.items)}
+          <div class="price">$${o.price || 0}</div>
+          ${buttons}
+        </div>
+      `;
+    }
 
-  const finalReason = reason.trim();
+    async function loadOrders(){
+      const res = await fetch("/orders");
+      const orders = await res.json();
 
-  if (!finalReason) {
-    alert("刪單一定要填原因");
-    return;
-  }
+      const pending = document.getElementById("pending");
+      const making = document.getElementById("making");
+      const waiting = document.getElementById("waiting");
+      const done = document.getElementById("done");
 
-  await fetch("/delete/" + id, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      reason: finalReason
-    })
-  });
+      pending.innerHTML = "";
+      making.innerHTML = "";
+      waiting.innerHTML = "";
+      done.innerHTML = "";
 
-  loadOrders();
-}
+      orders.forEach(o => {
+        if(o.status === "pending"){
+          pending.innerHTML += buildOrderHtml(o, "pending");
+        } else if(o.status === "making"){
+          making.innerHTML += buildOrderHtml(o, "making");
+        } else if(o.status === "waiting"){
+          waiting.innerHTML += buildOrderHtml(o, "waiting");
+        } else if(o.status === "done"){
+          done.innerHTML += buildOrderHtml(o, "done");
+        }
+      });
+    }
 
-async function editOrder(id){
-  const res = await fetch("/order/" + id);
-  const order = await res.json();
+    async function pay(id){
+      await fetch("/pay/" + id, { method:"POST" });
+      loadOrders();
+    }
 
-  if (!order || !order.items || order.items.length === 0) {
-    alert("找不到訂單內容");
-    return;
-  }
+    async function doneOrder(id){
+      await fetch("/done/" + id, { method:"POST" });
+      loadOrders();
+    }
 
-  const text = order.items.map(item =>
-    `${item.name}|${item.size}|${item.price}`
-  ).join("\n");
+    async function deleteOrder(id){
+      const reason = prompt("請輸入刪除原因（必填）", "");
+      if (reason === null) return;
 
-  const result = prompt(
+      const finalReason = reason.trim();
+      if (!finalReason) {
+        alert("刪單一定要填原因");
+        return;
+      }
+
+      await fetch("/delete/" + id, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: finalReason })
+      });
+
+      loadOrders();
+    }
+
+    async function editOrder(id){
+      const res = await fetch("/order/" + id);
+      const order = await res.json();
+
+      if (!order || !order.items || order.items.length === 0) {
+        alert("找不到訂單內容");
+        return;
+      }
+
+      const text = order.items.map(item =>
+        `${item.name}|${item.size}|${item.price}`
+      ).join("\\n");
+
+      const result = prompt(
 `請用這個格式修改，一行一個品項：
 品項|尺寸|價格
 
 例如：
 瑪格莉特披薩|圓形|270
 可樂|單品|30`,
-    text
-  );
+        text
+      );
 
-  if (result === null) return;
+      if (result === null) return;
 
-  const lines = result
-    .split("\n")
-    .map(line => line.trim())
-    .filter(line => line);
+      const lines = result
+        .split("\\n")
+        .map(line => line.trim())
+        .filter(line => line);
 
-  if (lines.length === 0) {
-    alert("訂單不可為空");
-    return;
-  }
+      if (lines.length === 0) {
+        alert("訂單不可為空");
+        return;
+      }
 
-  const newItems = [];
+      const newItems = [];
 
-  for (const line of lines) {
-    const parts = line.split("|").map(x => x.trim());
+      for (const line of lines) {
+        const parts = line.split("|").map(x => x.trim());
 
-    if (parts.length !== 3) {
-      alert(`格式錯誤：${line}\n請用：品項|尺寸|價格`);
-      return;
+        if (parts.length !== 3) {
+          alert(`格式錯誤：${line}\\n請用：品項|尺寸|價格`);
+          return;
+        }
+
+        const [name, size, priceText] = parts;
+        const price = Number(priceText);
+
+        if (!name || !size || Number.isNaN(price)) {
+          alert(`格式錯誤：${line}\\n價格必須是數字`);
+          return;
+        }
+
+        newItems.push({ name, size, price });
+      }
+
+      const saveRes = await fetch("/update-order/" + id, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: newItems })
+      });
+
+      const data = await saveRes.json();
+
+      if (!saveRes.ok) {
+        alert(data.error || "修改失敗");
+        return;
+      }
+
+      loadOrders();
     }
 
-    const [name, size, priceText] = parts;
-    const price = Number(priceText);
+    async function createTest(){
+      await fetch("/order", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          items: [
+            { name:"測試Pizza", size:"圓形", price:200 }
+          ],
+          price:200
+        })
+      });
 
-    if (!name || !size || Number.isNaN(price)) {
-      alert(`格式錯誤：${line}\n價格必須是數字`);
-      return;
+      loadOrders();
     }
 
-    newItems.push({ name, size, price });
-  }
-
-  const saveRes = await fetch("/update-order/" + id, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      items: newItems
-    })
-  });
-
-  const data = await saveRes.json();
-
-  if (!saveRes.ok) {
-    alert(data.error || "修改失敗");
-    return;
-  }
-
-  loadOrders();
-}
-
-async function createTest(){
-  await fetch("/order", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      items: [
-        { name:"測試Pizza", size:"圓形", price:200 }
-      ],
-      price:200
-    })
-  });
-
-  loadOrders();
-}
-
-loadOrders();
-setInterval(loadOrders, 2000);
-</script>
-
+    loadOrders();
+    setInterval(loadOrders, 2000);
+  </script>
 </body>
 </html>
