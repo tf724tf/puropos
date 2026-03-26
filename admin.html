@@ -7,7 +7,6 @@
 <title>PURO POS 後台</title>
 
 <style>
-
 body{
   font-family:sans-serif;
   margin:0;
@@ -27,37 +26,94 @@ h1{
 .topbar{
   display:flex;
   gap:10px;
+  flex-wrap:wrap;
   margin-bottom:15px;
 }
 
 .btn{
-  padding:10px 16px;
-  border-radius:8px;
+  padding:14px 20px;
+  border-radius:10px;
   border:none;
   background:black;
   color:white;
   cursor:pointer;
+  font-size:20px;
+  font-weight:700;
 }
 
 .section{
   background:white;
-  padding:15px;
-  border-radius:12px;
-  margin-bottom:15px;
+  padding:20px;
+  border-radius:16px;
+  margin-bottom:18px;
+}
+
+.section h2{
+  margin-top:0;
+  font-size:24px;
 }
 
 .order{
   border-bottom:1px solid #eee;
-  padding:10px 0;
+  padding:14px 0;
+}
+
+.order:last-child{
+  border-bottom:none;
+}
+
+.order-id{
+  font-size:22px;
+  font-weight:800;
+  margin-bottom:8px;
+}
+
+.item-line{
+  margin:4px 0;
+  font-size:18px;
 }
 
 .price{
   color:#c95a00;
   font-weight:bold;
+  font-size:28px;
+  margin:10px 0;
 }
 
-</style>
+.action-row{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
 
+.pay-btn,
+.done-btn,
+.delete-btn{
+  border:none;
+  border-radius:14px;
+  cursor:pointer;
+  min-width:180px;
+  padding:18px 24px;
+  font-size:26px;
+  font-weight:800;
+}
+
+.pay-btn{
+  background:#1f9d55;
+  color:white;
+}
+
+.done-btn{
+  background:#2563eb;
+  color:white;
+}
+
+.delete-btn{
+  background:#dc2626;
+  color:white;
+}
+</style>
 </head>
 <body>
 
@@ -66,191 +122,145 @@ h1{
 <h1>PURO POS 後台</h1>
 
 <div class="topbar">
+  <button class="btn" onclick="loadOrders()">刷新</button>
 
-<button class="btn" onclick="loadOrders()">刷新</button>
+  <a href="/order.html" target="_blank">
+    <button class="btn">客人點餐頁</button>
+  </a>
 
-<a href="/order.html" target="_blank">
-<button class="btn">客人點餐頁</button>
-</a>
+  <a href="/report.html" target="_blank">
+    <button class="btn">銷售報表</button>
+  </a>
 
-<a href="/report.html" target="_blank">
-<button class="btn">銷售報表</button>
-</a>
-
-<button class="btn" onclick="createTest()">建立測試訂單</button>
-
+  <button class="btn" onclick="createTest()">建立測試訂單</button>
 </div>
-
 
 <div class="section">
-
-<h2>未收款</h2>
-
-<div id="pending"></div>
-
+  <h2>未收款</h2>
+  <div id="pending"></div>
 </div>
-
 
 <div class="section">
-
-<h2>製作中 (前4單)</h2>
-
-<div id="making"></div>
-
+  <h2>製作中（前4單）</h2>
+  <div id="making"></div>
 </div>
-
 
 <div class="section">
-
-<h2>排隊中</h2>
-
-<div id="waiting"></div>
-
+  <h2>排隊中</h2>
+  <div id="waiting"></div>
 </div>
-
 
 <div class="section">
-
-<h2>完成</h2>
-
-<div id="done"></div>
-
+  <h2>完成</h2>
+  <div id="done"></div>
 </div>
 
-
 </div>
-
-
 
 <script>
+function renderItems(items){
+  return (items || []).map(i => `
+    <div class="item-line">${i.name} ${i.size} $${i.price}</div>
+  `).join("");
+}
 
+function buildOrderHtml(o, type){
+  let buttons = "";
+
+  if(type === "pending"){
+    buttons = `
+      <div class="action-row">
+        <button class="pay-btn" onclick="pay('${o.id}')">💰 收款</button>
+        <button class="delete-btn" onclick="deleteOrder('${o.id}')">🗑 刪除</button>
+      </div>
+    `;
+  }
+
+  if(type === "making"){
+    buttons = `
+      <div class="action-row">
+        <button class="done-btn" onclick="doneOrder('${o.id}')">✅ 完成</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="order">
+      <div class="order-id">${o.id}</div>
+      ${renderItems(o.items)}
+      <div class="price">$${o.price || 0}</div>
+      ${buttons}
+    </div>
+  `;
+}
 
 async function loadOrders(){
+  const res = await fetch("/orders");
+  const orders = await res.json();
 
-  const res = await fetch("/orders")
-  const orders = await res.json()
+  const pending = document.getElementById("pending");
+  const making = document.getElementById("making");
+  const waiting = document.getElementById("waiting");
+  const done = document.getElementById("done");
 
-  const pending = document.getElementById("pending")
-  const making = document.getElementById("making")
-  const waiting = document.getElementById("waiting")
-  const done = document.getElementById("done")
+  pending.innerHTML = "";
+  making.innerHTML = "";
+  waiting.innerHTML = "";
+  done.innerHTML = "";
 
-  pending.innerHTML=""
-  making.innerHTML=""
-  waiting.innerHTML=""
-  done.innerHTML=""
-
-
-  orders.forEach(o=>{
-
-    const div = document.createElement("div")
-    div.className="order"
-
-    const items = (o.items||[])
-      .map(i=>`${i.name} ${i.size} $${i.price}`)
-      .join("<br>")
-
-
-    div.innerHTML = `
-
-      <b>${o.id}</b><br>
-
-      ${items}<br>
-
-      <span class="price">$${o.price}</span><br>
-
-    `
-
-
-    if(o.status=="pending"){
-
-      div.innerHTML += `
-      <button onclick="pay('${o.id}')">收款</button>
-      `
-
-      pending.appendChild(div)
-
+  orders.forEach(o => {
+    if(o.status === "pending"){
+      pending.innerHTML += buildOrderHtml(o, "pending");
+    } else if(o.status === "making"){
+      making.innerHTML += buildOrderHtml(o, "making");
+    } else if(o.status === "waiting"){
+      waiting.innerHTML += buildOrderHtml(o, "waiting");
+    } else if(o.status === "done"){
+      done.innerHTML += buildOrderHtml(o, "done");
     }
-
-
-    else if(o.status=="making"){
-
-      div.innerHTML += `
-      <button onclick="doneOrder('${o.id}')">完成</button>
-      `
-
-      making.appendChild(div)
-
-    }
-
-
-    else if(o.status=="waiting"){
-
-      waiting.appendChild(div)
-
-    }
-
-
-    else if(o.status=="done"){
-
-      done.appendChild(div)
-
-    }
-
-  })
-
+  });
 }
-
 
 async function pay(id){
-
-  await fetch("/pay/"+id,{method:"POST"})
-  loadOrders()
-
+  await fetch("/pay/" + id, { method:"POST" });
+  loadOrders();
 }
-
 
 async function doneOrder(id){
-
-  await fetch("/done/"+id,{method:"POST"})
-  loadOrders()
-
+  await fetch("/done/" + id, { method:"POST" });
+  loadOrders();
 }
 
+async function deleteOrder(id){
+  const reason = prompt("請輸入刪除原因", "客人取消");
+  if(reason === null) return;
+
+  await fetch("/delete/" + id, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ reason })
+  });
+
+  loadOrders();
+}
 
 async function createTest(){
-
-  await fetch("/order",{
-
+  await fetch("/order", {
     method:"POST",
-
-    headers:{
-      "Content-Type":"application/json"
-    },
-
-    body:JSON.stringify({
-
-      items:[
-        {name:"測試Pizza",size:"圓形",price:200}
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      items: [
+        { name:"測試Pizza", size:"圓形", price:200 }
       ],
-
       price:200
-
     })
+  });
 
-  })
-
-  loadOrders()
-
+  loadOrders();
 }
 
-
-
-loadOrders()
-
-setInterval(loadOrders,2000)
-
-
+loadOrders();
+setInterval(loadOrders, 2000);
 </script>
 
 </body>
