@@ -321,16 +321,29 @@
         const div = document.createElement("div");
         div.className = "item-card";
         div.innerHTML = `
-          <div class="item-title">${item.name}</div>
-          <div class="item-desc">${item.desc}</div>
-          <div class="price-row">方形 $${item.prices["方形"]}｜圓形 $${item.prices["圓形"]}</div>
-          <div class="btn-row">
-            <button class="add-btn" onclick='addPizza(${JSON.stringify(item.name)}, "方形", ${item.prices["方形"]})'>加方形</button>
-            <button class="add-btn" onclick='addPizza(${JSON.stringify(item.name)}, "圓形", ${item.prices["圓形"]})'>加圓形</button>
-          </div>
-        `;
-        list.appendChild(div);
-      });
+  <div class="item-title">${item.name}</div>
+  <div class="item-desc">${item.desc}</div>
+
+  <div class="price-row">
+    方形 $${item.prices["方形"]}｜圓形 $${item.prices["圓形"]}
+  </div>
+
+  <div class="btn-row">
+
+    <button class="add-btn"
+      onclick='addPizza(${JSON.stringify(item.name)}, "方形", ${item.prices["方形"]})'>
+      方形
+      <span style="font-size:14px;opacity:0.7;">(15×24CM)</span>
+    </button>
+
+    <button class="add-btn"
+      onclick='addPizza(${JSON.stringify(item.name)}, "圓形", ${item.prices["圓形"]})'>
+      圓形
+      <span style="font-size:14px;opacity:0.7;">(9吋)</span>
+    </button>
+
+  </div>
+`;
     }
 
     function renderDrinkList() {
