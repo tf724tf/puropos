@@ -171,6 +171,7 @@ function buildOrderHtml(o, type){
     buttons = `
       <div class="action-row">
         <button class="pay-btn" onclick="pay('${o.id}')">💰 收款</button>
+        <button class="done-btn" onclick="editOrder('${o.id}')">✏️ 修改</button>
         <button class="delete-btn" onclick="deleteOrder('${o.id}')">🗑 刪除</button>
       </div>
     `;
