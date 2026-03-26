@@ -18,7 +18,9 @@ db.serialize(() => {
       items TEXT,
       price INTEGER,
       status TEXT,
-      createdAt INTEGER
+      createdAt INTEGER,
+      deletedAt INTEGER,
+      deleteReason TEXT
     )
   `);
 
@@ -28,18 +30,22 @@ db.serialize(() => {
       return;
     }
 
-    const columnNames = columns.map(c => c.name);
+    const names = columns.map(c => c.name);
 
-    if (!columnNames.includes("items")) {
+    if (!names.includes("items")) {
       db.run(`ALTER TABLE orders ADD COLUMN items TEXT`);
     }
-
-    if (!columnNames.includes("price")) {
+    if (!names.includes("price")) {
       db.run(`ALTER TABLE orders ADD COLUMN price INTEGER DEFAULT 0`);
     }
-
-    if (!columnNames.includes("createdAt")) {
+    if (!names.includes("createdAt")) {
       db.run(`ALTER TABLE orders ADD COLUMN createdAt INTEGER`);
+    }
+    if (!names.includes("deletedAt")) {
+      db.run(`ALTER TABLE orders ADD COLUMN deletedAt INTEGER`);
+    }
+    if (!names.includes("deleteReason")) {
+      db.run(`ALTER TABLE orders ADD COLUMN deleteReason TEXT`);
     }
   });
 });
@@ -50,6 +56,13 @@ function parseItems(itemsText) {
   } catch {
     return [];
   }
+}
+
+function safeRow(row) {
+  return {
+    ...row,
+    items: parseItems(row.items)
+  };
 }
 
 app.get("/", (req, res) => {
@@ -66,34 +79,32 @@ app.post("/order", (req, res) => {
   const id = "A" + Date.now().toString().slice(-4);
 
   db.run(
-    `INSERT INTO orders (id, items, price, status, createdAt)
-     VALUES (?, ?, ?, ?, ?)`,
-    [id, JSON.stringify(items), price || 0, "pending", Date.now()],
+    `INSERT INTO orders (id, items, price, status, createdAt, deletedAt, deleteReason)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, JSON.stringify(items), price || 0, "pending", Date.now(), null, null],
     (err) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: "新增訂單失敗" });
       }
-
       res.json({ id });
     }
   );
 });
 
 app.get("/orders", (req, res) => {
-  db.all(`SELECT * FROM orders ORDER BY createdAt DESC`, (err, rows) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: "讀取訂單失敗" });
+  db.all(
+    `SELECT * FROM orders
+     WHERE status NOT IN ('deleted')
+     ORDER BY createdAt DESC`,
+    (err, rows) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "讀取訂單失敗" });
+      }
+      res.json(rows.map(safeRow));
     }
-
-    const parsedRows = rows.map(row => ({
-      ...row,
-      items: parseItems(row.items)
-    }));
-
-    res.json(parsedRows);
-  });
+  );
 });
 
 app.get("/order/:id", (req, res) => {
@@ -102,15 +113,10 @@ app.get("/order/:id", (req, res) => {
       console.error(err);
       return res.status(500).json({ error: "讀取單筆訂單失敗" });
     }
-
     if (!row) {
       return res.status(404).json({ error: "找不到訂單" });
     }
-
-    res.json({
-      ...row,
-      items: parseItems(row.items)
-    });
+    res.json(safeRow(row));
   });
 });
 
@@ -131,7 +137,6 @@ app.post("/pay/:id", (req, res) => {
           console.error(err);
           return res.status(500).json({ error: "更新狀態失敗" });
         }
-
         res.json({ success: true });
       }
     );
@@ -165,16 +170,41 @@ app.post("/done/:id", (req, res) => {
   );
 });
 
+// 退單：保留紀錄
 app.post("/refund/:id", (req, res) => {
   db.run(
-    `UPDATE orders SET status='refunded' WHERE id=?`,
-    [req.params.id],
+    `UPDATE orders
+     SET status='refunded',
+         deleteReason=?,
+         deletedAt=?
+     WHERE id=?`,
+    ["退單", Date.now(), req.params.id],
     (err) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ error: "退單失敗" });
       }
+      res.json({ success: true });
+    }
+  );
+});
 
+// 刪單：保留紀錄
+app.post("/delete/:id", (req, res) => {
+  const { reason } = req.body || {};
+
+  db.run(
+    `UPDATE orders
+     SET status='deleted',
+         deleteReason=?,
+         deletedAt=?
+     WHERE id=?`,
+    [reason || "手動刪除", Date.now(), req.params.id],
+    (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "刪除訂單失敗" });
+      }
       res.json({ success: true });
     }
   );
@@ -197,7 +227,6 @@ app.get("/report/today", (req, res) => {
         console.error(err);
         return res.status(500).json({ error: "今日報表失敗" });
       }
-
       res.json({
         orderCount: row?.orderCount || 0,
         total: row?.total || 0
@@ -223,7 +252,6 @@ app.get("/report/month", (req, res) => {
         console.error(err);
         return res.status(500).json({ error: "本月報表失敗" });
       }
-
       res.json({
         orderCount: row?.orderCount || 0,
         total: row?.total || 0
@@ -249,7 +277,6 @@ app.get("/report/year", (req, res) => {
         console.error(err);
         return res.status(500).json({ error: "本年報表失敗" });
       }
-
       res.json({
         orderCount: row?.orderCount || 0,
         total: row?.total || 0
@@ -286,15 +313,12 @@ app.get("/report/history", (req, res) => {
       return res.status(500).json({ error: "歷史訂單查詢失敗" });
     }
 
-    let parsedRows = rows.map(row => ({
-      ...row,
-      items: parseItems(row.items)
-    }));
+    let parsedRows = rows.map(safeRow);
 
     if (keyword) {
       parsedRows = parsedRows.filter(row => {
-        if (row.id.includes(keyword)) return true;
-        return row.items.some(item => (item.name || "").includes(keyword));
+        if ((row.id || "").includes(keyword)) return true;
+        return (row.items || []).some(item => (item.name || "").includes(keyword));
       });
     }
 
@@ -304,7 +328,7 @@ app.get("/report/history", (req, res) => {
 
 app.get("/report/items", (req, res) => {
   db.all(
-    `SELECT items, price, status FROM orders WHERE status='done'`,
+    `SELECT items, status FROM orders WHERE status='done'`,
     [],
     (err, rows) => {
       if (err) {
