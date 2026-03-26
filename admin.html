@@ -263,6 +263,80 @@ async function createTest(){
 loadOrders();
 setInterval(loadOrders, 2000);
 </script>
+async function editOrder(id){
+  const res = await fetch("/order/" + id);
+  const order = await res.json();
 
+  if (!order || !order.items || order.items.length === 0) {
+    alert("找不到訂單內容");
+    return;
+  }
+
+  const text = order.items.map(item =>
+    `${item.name}|${item.size}|${item.price}`
+  ).join("\n");
+
+  const result = prompt(
+`請用這個格式修改，一行一個品項：
+品項|尺寸|價格
+
+例如：
+瑪格莉特披薩|圓形|270
+可樂|單品|30`,
+    text
+  );
+
+  if (result === null) return;
+
+  const lines = result
+    .split("\n")
+    .map(line => line.trim())
+    .filter(line => line);
+
+  if (lines.length === 0) {
+    alert("訂單不可為空");
+    return;
+  }
+
+  const newItems = [];
+
+  for (const line of lines) {
+    const parts = line.split("|").map(x => x.trim());
+
+    if (parts.length !== 3) {
+      alert(`格式錯誤：${line}\n請用：品項|尺寸|價格`);
+      return;
+    }
+
+    const [name, size, priceText] = parts;
+    const price = Number(priceText);
+
+    if (!name || !size || Number.isNaN(price)) {
+      alert(`格式錯誤：${line}\n價格必須是數字`);
+      return;
+    }
+
+    newItems.push({ name, size, price });
+  }
+
+  const saveRes = await fetch("/update-order/" + id, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      items: newItems
+    })
+  });
+
+  const data = await saveRes.json();
+
+  if (!saveRes.ok) {
+    alert(data.error || "修改失敗");
+    return;
+  }
+
+  loadOrders();
+}
 </body>
 </html>
