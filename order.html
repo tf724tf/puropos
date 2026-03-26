@@ -1,126 +1,216 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PURO Pizza 點餐</title>
-
   <style>
     body {
       font-family: sans-serif;
+      margin: 0;
       padding: 20px;
-      text-align: center;
+      background: #f7f7f7;
+      color: #222;
     }
 
     h1 {
-      margin-bottom: 20px;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 24px;
     }
 
     .menu {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      max-width: 720px;
+      margin: 0 auto 24px;
     }
 
-    .item {
-      border: 2px solid #ddd;
-      border-radius: 12px;
-      padding: 10px;
+    .card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       cursor: pointer;
     }
 
-    .item img {
+    .card.selected {
+      border-color: #ff6a00;
+    }
+
+    .card img {
       width: 100%;
-      border-radius: 10px;
+      height: 220px;
+      object-fit: cover;
+      display: block;
     }
 
-    .selected {
-      border: 3px solid red;
+    .card-body {
+      padding: 14px;
     }
 
-    .size {
-      margin-top: 20px;
+    .name {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
     }
 
-    button {
+    .desc {
+      color: #666;
+      font-size: 16px;
+    }
+
+    .section {
+      max-width: 720px;
+      margin: 0 auto 20px;
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .section h2 {
+      margin: 0 0 14px;
       font-size: 22px;
-      padding: 15px;
-      margin-top: 20px;
+    }
+
+    .sizes {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .size-btn {
+      flex: 1;
+      min-width: 120px;
+      font-size: 20px;
+      padding: 14px;
+      border: 2px solid #ccc;
+      background: white;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .size-btn.selected {
+      border-color: #ff6a00;
+      background: #fff3eb;
+      color: #c24d00;
+      font-weight: 700;
+    }
+
+    .submit-btn {
+      display: block;
       width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      font-size: 24px;
+      padding: 18px;
       border: none;
-      border-radius: 10px;
-      background-color: black;
+      border-radius: 14px;
+      background: black;
       color: white;
+      cursor: pointer;
+    }
+
+    .note {
+      max-width: 720px;
+      margin: 14px auto 0;
+      color: #666;
+      text-align: center;
+      font-size: 15px;
     }
   </style>
 </head>
-
 <body>
+  <h1>🍕 PURO Pizza</h1>
+  <div class="subtitle">請先選口味，再選尺寸，送出後至櫃台付款</div>
 
-<h1>🍕 PURO Pizza</h1>
+  <div class="menu">
+    <div class="card" data-item="瑪格麗特" onclick="selectItem(this, '瑪格麗特')">
+      <img src="https://images.unsplash.com/photo-1604382355076-af4b0eb60143?q=80&w=1200&auto=format&fit=crop" alt="瑪格麗特">
+      <div class="card-body">
+        <div class="name">瑪格麗特</div>
+        <div class="desc">番茄、羅勒、莫札瑞拉起司</div>
+      </div>
+    </div>
 
-<div class="menu">
-
-  <div class="item" onclick="selectItem('瑪格')">
-    <img src="https://images.unsplash.com/photo-1601924638867-3ec3a7c4a16d">
-    <p>瑪格麗特</p>
+    <div class="card" data-item="燻雞" onclick="selectItem(this, '燻雞')">
+      <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1200&auto=format&fit=crop" alt="燻雞披薩">
+      <div class="card-body">
+        <div class="name">燻雞</div>
+        <div class="desc">燻雞、起司、經典風味</div>
+      </div>
+    </div>
   </div>
 
-  <div class="item" onclick="selectItem('燻雞')">
-    <img src="https://images.unsplash.com/photo-1601924577280-3c5d3c2a6c10">
-    <p>燻雞</p>
+  <div class="section">
+    <h2>選尺寸</h2>
+    <div class="sizes">
+      <button class="size-btn" onclick="selectSize(this, '小')">小</button>
+      <button class="size-btn" onclick="selectSize(this, '大')">大</button>
+    </div>
   </div>
 
-</div>
+  <button class="submit-btn" onclick="submitOrder()">送出訂單</button>
+  <div class="note">送出成功後，請到櫃台確認並付款。</div>
 
-<div class="size">
-  <h3>選尺寸</h3>
-  <button onclick="selectSize('小')">小</button>
-  <button onclick="selectSize('大')">大</button>
-</div>
+  <script>
+    let selectedItem = "";
+    let selectedSize = "";
 
-<button onclick="submitOrder()">送出訂單</button>
+    function selectItem(el, item) {
+      selectedItem = item;
+      document.querySelectorAll(".card").forEach(card => card.classList.remove("selected"));
+      el.classList.add("selected");
+    }
 
-<script>
-let selectedItem = "";
-let selectedSize = "";
+    function selectSize(el, size) {
+      selectedSize = size;
+      document.querySelectorAll(".size-btn").forEach(btn => btn.classList.remove("selected"));
+      el.classList.add("selected");
+    }
 
-// 選品項
-function selectItem(item) {
-  selectedItem = item;
+    async function submitOrder() {
+      if (!selectedItem || !selectedSize) {
+        alert("請先選擇口味與尺寸");
+        return;
+      }
 
-  document.querySelectorAll(".item").forEach(el => el.classList.remove("selected"));
-  event.currentTarget.classList.add("selected");
-}
+      try {
+        const res = await fetch("/order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            item: selectedItem,
+            size: selectedSize
+          })
+        });
 
-// 選尺寸
-function selectSize(size) {
-  selectedSize = size;
-  alert("已選：" + size);
-}
+        const data = await res.json();
 
-// 送單
-async function submitOrder() {
-  if (!selectedItem || !selectedSize) {
-    alert("請選擇品項與尺寸");
-    return;
-  }
+        if (!res.ok) {
+          alert("送單失敗");
+          return;
+        }
 
-  await fetch("http://localhost:3000/order", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      item: selectedItem,
-      size: selectedSize
-    })
-  });
-
-  alert("✅ 已送出訂單");
-
-  selectedItem = "";
-  selectedSize = "";
-}
-</script>
-
+        alert(`訂單已送出：${data.id}\n請至櫃台付款`);
+        selectedItem = "";
+        selectedSize = "";
+        document.querySelectorAll(".card").forEach(card => card.classList.remove("selected"));
+        document.querySelectorAll(".size-btn").forEach(btn => btn.classList.remove("selected"));
+      } catch (err) {
+        alert("送單失敗，請稍後再試");
+      }
+    }
+  </script>
 </body>
 </html>
