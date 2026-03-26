@@ -190,6 +190,34 @@ app.post("/refund/:id", (req, res) => {
 });
 
 // 刪單：保留紀錄
+app.post("/update-order/:id", (req, res) => {
+  const { items } = req.body || {};
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "items 不可為空" });
+  }
+
+  const totalPrice = items.reduce((sum, item) => {
+    return sum + Number(item.price || 0);
+  }, 0);
+
+  db.run(
+    `UPDATE orders
+     SET items=?,
+         price=?
+     WHERE id=?
+       AND status='pending'`,
+    [JSON.stringify(items), totalPrice, req.params.id],
+    (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "修改訂單失敗" });
+      }
+
+      res.json({ success: true });
+    }
+  );
+});
 app.post("/delete/:id", (req, res) => {
   const { reason } = req.body || {};
 
