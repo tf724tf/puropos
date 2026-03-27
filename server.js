@@ -10,12 +10,41 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
+const REPORT_PASSWORD = "7929";
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
 });
+
+function parseCookies(req) {
+  const header = req.headers.cookie || "";
+  const cookies = {};
+
+  header.split(";").forEach(part => {
+    const [key, ...rest] = part.trim().split("=");
+    if (!key) return;
+    cookies[key] = decodeURIComponent(rest.join("="));
+  });
+
+  return cookies;
+}
+
+function requireReportAuth(req, res, next) {
+  const cookies = parseCookies(req);
+
+  if (cookies.report_auth === "ok") {
+    return next();
+  }
+
+  if (req.path.startsWith("/report/") || req.path === "/report.html") {
+    return res.redirect("/report-login.html");
+  }
+
+  return res.status(401).json({ error: "未授權，請先登入報表系統" });
+}
 
 async function initDb() {
   await pool.query(`
@@ -170,6 +199,33 @@ function filterRowsByKeyword(rows, keyword) {
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.get("/report-login.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "report-login.html"));
+});
+
+app.post("/report-login", (req, res) => {
+  const { password } = req.body || {};
+
+  if (String(password || "").trim() !== REPORT_PASSWORD) {
+    return res.status(401).json({ error: "密碼錯誤" });
+  }
+
+  res.setHeader(
+    "Set-Cookie",
+    "report_auth=ok; Path=/; HttpOnly; Max-Age=28800; SameSite=Lax"
+  );
+
+  res.json({ success: true });
+});
+
+app.post("/report-logout", (req, res) => {
+  res.setHeader(
+    "Set-Cookie",
+    "report_auth=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax"
+  );
+  res.json({ success: true });
 });
 
 app.post("/order", async (req, res) => {
@@ -358,6 +414,20 @@ app.post("/update-order/:id", async (req, res) => {
     console.error("修改訂單失敗:", err);
     res.status(500).json({ error: "修改訂單失敗" });
   }
+});
+
+app.use((req, res, next) => {
+  if (
+    req.path === "/report.html" ||
+    req.path.startsWith("/report/")
+  ) {
+    return requireReportAuth(req, res, next);
+  }
+  next();
+});
+
+app.get("/report.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "report.html"));
 });
 
 app.get("/report/today", async (req, res) => {
