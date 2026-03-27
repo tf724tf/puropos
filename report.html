@@ -33,7 +33,7 @@
 
     .cards {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -52,7 +52,7 @@
     }
 
     .card-value {
-      font-size: 34px;
+      font-size: 32px;
       font-weight: 900;
     }
 
@@ -161,10 +161,6 @@
       .cards {
         grid-template-columns: 1fr;
       }
-
-      table {
-        font-size: 14px;
-      }
     }
   </style>
 </head>
@@ -172,6 +168,15 @@
   <div class="wrap">
     <a class="top-link" href="/admin.html">← 回櫃檯後台</a>
     <h1>📊 銷售報表 / 歷史訂單</h1>
+
+    <div class="section">
+      <h2>📅 月份查詢</h2>
+      <div class="filters">
+        <input type="month" id="month-picker" />
+        <button onclick="loadMonthData()">查詢月份</button>
+        <button onclick="exportExcel()">匯出 Excel</button>
+      </div>
+    </div>
 
     <div class="cards">
       <div class="card">
@@ -181,9 +186,15 @@
       </div>
 
       <div class="card">
-        <div class="card-title">本月營業額</div>
+        <div class="card-title">查詢月份營業額</div>
         <div class="card-value" id="month-total">$0</div>
         <div id="month-count" class="card-sub">0 筆</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">查詢月份 Pizza 銷售</div>
+        <div class="card-value" id="month-pizza-count">0 張</div>
+        <div id="month-label" class="card-sub">尚未查詢</div>
       </div>
 
       <div class="card">
@@ -194,7 +205,7 @@
     </div>
 
     <div class="section">
-      <h2>🔥 熱銷商品排行</h2>
+      <h2>🔥 熱銷商品排行（依查詢月份）</h2>
       <table>
         <thead>
           <tr>
@@ -254,6 +265,10 @@
       return d.toLocaleString("zh-TW");
     }
 
+    function getSelectedMonth() {
+      return document.getElementById("month-picker").value;
+    }
+
     function statusHtml(row) {
       const map = {
         done: ["完成", "status-done"],
@@ -274,31 +289,35 @@
       `;
     }
 
-    async function loadSummary() {
+    async function loadFixedSummary() {
       const today = await fetch("/report/today").then(r => r.json());
-      const month = await fetch("/report/month").then(r => r.json());
       const year = await fetch("/report/year").then(r => r.json());
 
       document.getElementById("today-total").innerText = money(today.total);
       document.getElementById("today-count").innerText = `${today.orderCount || 0} 筆`;
 
-      document.getElementById("month-total").innerText = money(month.total);
-      document.getElementById("month-count").innerText = `${month.orderCount || 0} 筆`;
-
       document.getElementById("year-total").innerText = money(year.total);
       document.getElementById("year-count").innerText = `${year.orderCount || 0} 筆`;
     }
 
-    async function loadItemRank() {
-      const rows = await fetch("/report/items").then(r => r.json());
+    async function loadMonthData() {
+      const month = getSelectedMonth();
+      const summary = await fetch(`/report/monthly-summary?month=${encodeURIComponent(month)}`).then(r => r.json());
+      const items = await fetch(`/report/items?month=${encodeURIComponent(month)}`).then(r => r.json());
+
+      document.getElementById("month-total").innerText = money(summary.total);
+      document.getElementById("month-count").innerText = `${summary.orderCount || 0} 筆`;
+      document.getElementById("month-pizza-count").innerText = `${summary.pizzaCount || 0} 張`;
+      document.getElementById("month-label").innerText = summary.month || "尚未查詢";
+
       const body = document.getElementById("item-rank-body");
 
-      if (!rows.length) {
-        body.innerHTML = `<tr><td colspan="5" class="muted">目前沒有完成訂單資料</td></tr>`;
+      if (!items.length) {
+        body.innerHTML = `<tr><td colspan="5" class="muted">這個月份目前沒有完成訂單資料</td></tr>`;
         return;
       }
 
-      body.innerHTML = rows.map((row, index) => `
+      body.innerHTML = items.map((row, index) => `
         <tr>
           <td>${index + 1}</td>
           <td>${row.item}</td>
@@ -314,26 +333,24 @@
       const dateTo = document.getElementById("date-to").value;
       const keyword = document.getElementById("keyword").value.trim();
       const statusFilter = document.getElementById("status-filter").value;
+      const month = getSelectedMonth();
 
       const params = new URLSearchParams();
       if (dateFrom) params.append("dateFrom", dateFrom);
       if (dateTo) params.append("dateTo", dateTo);
       if (keyword) params.append("keyword", keyword);
+      if (statusFilter) params.append("status", statusFilter);
+      if (month) params.append("month", month);
 
       const rows = await fetch("/report/history?" + params.toString()).then(r => r.json());
       const body = document.getElementById("history-body");
 
-      let filteredRows = rows;
-      if (statusFilter) {
-        filteredRows = rows.filter(row => row.status === statusFilter);
-      }
-
-      if (!filteredRows.length) {
+      if (!rows.length) {
         body.innerHTML = `<tr><td colspan="5" class="muted">查無資料</td></tr>`;
         return;
       }
 
-      body.innerHTML = filteredRows.map(row => `
+      body.innerHTML = rows.map(row => `
         <tr>
           <td>${row.id}</td>
           <td>${formatTime(row.createdAt)}</td>
@@ -348,8 +365,32 @@
       `).join("");
     }
 
-    loadSummary();
-    loadItemRank();
+    function exportExcel() {
+      const dateFrom = document.getElementById("date-from").value;
+      const dateTo = document.getElementById("date-to").value;
+      const keyword = document.getElementById("keyword").value.trim();
+      const statusFilter = document.getElementById("status-filter").value;
+      const month = getSelectedMonth();
+
+      const params = new URLSearchParams();
+      if (dateFrom) params.append("dateFrom", dateFrom);
+      if (dateTo) params.append("dateTo", dateTo);
+      if (keyword) params.append("keyword", keyword);
+      if (statusFilter) params.append("status", statusFilter);
+      if (month) params.append("month", month);
+
+      window.open("/report/export?" + params.toString(), "_blank");
+    }
+
+    function setDefaultMonth() {
+      const now = new Date();
+      const value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      document.getElementById("month-picker").value = value;
+    }
+
+    setDefaultMonth();
+    loadFixedSummary();
+    loadMonthData();
     loadHistory();
   </script>
 </body>
