@@ -90,7 +90,7 @@ h1{margin:0 0 10px;}
     <div id="editor-list"></div>
     <div class="editor-actions">
       <button class="small-btn" onclick="addEditorRow('pizza')">+ 加 Pizza</button>
-      <button class="small-btn" onclick="addEditorRow('drink')">+ 加 飲料 / 冰淇淋</button>
+      <button class="small-btn" onclick="addEditorRow('drink')">+ 加 飲料/冰淇淋</button>
       <button class="small-btn" onclick="saveEdit()">儲存修改</button>
       <button class="small-btn" onclick="closeModal()">取消</button>
     </div>
@@ -100,7 +100,7 @@ h1{margin:0 0 10px;}
 
 <script src="/menu.js"></script>
 <script>
-const MENU = window.PURO_MENU || { pizzas: [], drinks: [] };
+const MENU = window.PURO_MENU;
 let currentEditingId = null;
 
 function renderItems(items){
@@ -109,7 +109,6 @@ function renderItems(items){
 
 function buildOrderHtml(o, type){
   let buttons = "";
-
   if(type === "pending"){
     buttons = `
       <div class="action-row">
@@ -119,7 +118,6 @@ function buildOrderHtml(o, type){
       </div>
     `;
   }
-
   if(type === "making"){
     buttons = `
       <div class="action-row">
@@ -127,7 +125,6 @@ function buildOrderHtml(o, type){
       </div>
     `;
   }
-
   return `
     <div class="order">
       <div class="order-id">${o.id}</div>
@@ -142,16 +139,21 @@ async function loadOrders(){
   const res = await fetch("/orders");
   const orders = await res.json();
 
-  document.getElementById("pending").innerHTML = "";
-  document.getElementById("making").innerHTML = "";
-  document.getElementById("waiting").innerHTML = "";
-  document.getElementById("done").innerHTML = "";
+  const pending = document.getElementById("pending");
+  const making = document.getElementById("making");
+  const waiting = document.getElementById("waiting");
+  const done = document.getElementById("done");
+
+  pending.innerHTML = "";
+  making.innerHTML = "";
+  waiting.innerHTML = "";
+  done.innerHTML = "";
 
   orders.forEach(o => {
-    if(o.status === "pending") document.getElementById("pending").innerHTML += buildOrderHtml(o, "pending");
-    else if(o.status === "making") document.getElementById("making").innerHTML += buildOrderHtml(o, "making");
-    else if(o.status === "waiting") document.getElementById("waiting").innerHTML += buildOrderHtml(o, "waiting");
-    else if(o.status === "done") document.getElementById("done").innerHTML += buildOrderHtml(o, "done");
+    if(o.status === "pending") pending.innerHTML += buildOrderHtml(o, "pending");
+    else if(o.status === "making") making.innerHTML += buildOrderHtml(o, "making");
+    else if(o.status === "waiting") waiting.innerHTML += buildOrderHtml(o, "waiting");
+    else if(o.status === "done") done.innerHTML += buildOrderHtml(o, "done");
   });
 }
 
@@ -280,11 +282,6 @@ function recalcEditorTotal(){
 }
 
 async function openEditModal(id){
-  if (!MENU.pizzas.length && !MENU.drinks.length) {
-    alert("menu.js 沒有載入成功");
-    return;
-  }
-
   currentEditingId = id;
   const res = await fetch("/order/" + id);
   const order = await res.json();
@@ -305,4 +302,91 @@ async function openEditModal(id){
     } else if(drink){
       addEditorRow("drink", {
         menuId: drink.id,
+        price: item.price
+      });
+    }
+  });
+
+  document.getElementById("modal-bg").style.display = "flex";
+  recalcEditorTotal();
+}
+
+function closeModal(){
+  document.getElementById("modal-bg").style.display = "none";
+  document.getElementById("editor-list").innerHTML = "";
+  currentEditingId = null;
+}
+
+async function saveEdit(){
+  const rows = document.querySelectorAll("#editor-list .editor-row");
+  if(rows.length === 0){
+    alert("訂單不可為空");
+    return;
+  }
+
+  const items = [];
+
+  rows.forEach(row => {
+    const type = row.dataset.type;
+    const price = Number(row.querySelector(".row-price").value || 0);
+
+    if(type === "pizza"){
+      const pizzaId = row.querySelector(".pizza-select").value;
+      const size = row.querySelector(".pizza-size").value;
+      const pizza = MENU.pizzas.find(p => p.id === pizzaId);
+
+      items.push({
+        name: pizza.name,
+        size,
         price
+      });
+    }
+
+    if(type === "drink"){
+      const drinkId = row.querySelector(".drink-select").value;
+      const drink = MENU.drinks.find(d => d.id === drinkId);
+
+      items.push({
+        name: drink.name,
+        size: "單品",
+        price
+      });
+    }
+  });
+
+  const res = await fetch("/update-order/" + currentEditingId, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items })
+  });
+
+  const data = await res.json();
+  if(!res.ok){
+    alert(data.error || "修改失敗");
+    return;
+  }
+
+  closeModal();
+  loadOrders();
+}
+
+async function createTest(){
+  await fetch("/order", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      items: [
+        { name:"測試Pizza", size:"圓形", price:200 }
+      ],
+      price:200
+    })
+  });
+  loadOrders();
+}
+
+loadOrders();
+setInterval(loadOrders, 2000);
+</script>
+
+</body>
+</html>
