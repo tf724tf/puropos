@@ -1,7 +1,7 @@
 {
   "name": "puro-pos",
   "version": "1.0.0",
-  "description": "",
+  "description": "PURO Pizza POS",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -12,10 +12,10 @@
   "type": "commonjs",
   "engines": {
     "node": "20.x"
-  {
+  },
   "dependencies": {
-    "cors": "^2.8.6",
-    "express": "^5.2.1",
-    "pg": "^8.13.1"
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "pg": "^8.12.0"
   }
 }
