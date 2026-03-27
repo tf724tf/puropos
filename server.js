@@ -125,12 +125,45 @@ function getMonthRange(monthString) {
   };
 }
 
-function getYearRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+function getYearRange(yearString) {
+  let year;
+
+  if (yearString && /^\d{4}$/.test(yearString)) {
+    year = Number(yearString);
+  } else {
+    year = new Date().getFullYear();
+  }
+
+  const start = new Date(year, 0, 1, 0, 0, 0, 0);
+  const end = new Date(year + 1, 0, 1, 0, 0, 0, 0);
+
   return {
     startMs: start.getTime(),
-    endMs: Date.now(),
+    endMs: end.getTime() - 1,
+    label: `${year}`,
+  };
+}
+
+function getDateRange(dateString) {
+  let date;
+
+  if (dateString && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    date = new Date(dateString);
+  } else {
+    date = new Date();
+  }
+
+  date.setHours(0, 0, 0, 0);
+  const start = new Date(date);
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+
+  const label = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+
+  return {
+    startMs: start.getTime(),
+    endMs: end.getTime(),
+    label,
   };
 }
 
@@ -452,50 +485,6 @@ app.get("/report/today", async (req, res) => {
   }
 });
 
-app.get("/report/month", async (req, res) => {
-  try {
-    const range = getMonthRange();
-
-    const result = await pool.query(
-      `SELECT
-         COUNT(*)::int AS "orderCount",
-         COALESCE(SUM(price), 0)::int AS total
-       FROM orders
-       WHERE status = 'done'
-         AND created_at >= $1
-         AND created_at <= $2`,
-      [range.startMs, range.endMs]
-    );
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("本月報表失敗:", err);
-    res.status(500).json({ error: "本月報表失敗" });
-  }
-});
-
-app.get("/report/year", async (req, res) => {
-  try {
-    const range = getYearRange();
-
-    const result = await pool.query(
-      `SELECT
-         COUNT(*)::int AS "orderCount",
-         COALESCE(SUM(price), 0)::int AS total
-       FROM orders
-       WHERE status = 'done'
-         AND created_at >= $1
-         AND created_at <= $2`,
-      [range.startMs, range.endMs]
-    );
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("本年報表失敗:", err);
-    res.status(500).json({ error: "本年報表失敗" });
-  }
-});
-
 app.get("/report/monthly-summary", async (req, res) => {
   try {
     const range = getMonthRange(req.query.month);
@@ -524,6 +513,90 @@ app.get("/report/monthly-summary", async (req, res) => {
   } catch (err) {
     console.error("月份摘要失敗:", err);
     res.status(500).json({ error: "月份摘要失敗" });
+  }
+});
+
+app.get("/report/yearly-summary", async (req, res) => {
+  try {
+    const range = getYearRange(req.query.year);
+
+    const result = await pool.query(
+      `SELECT *
+       FROM orders
+       WHERE status = 'done'
+         AND created_at >= $1
+         AND created_at <= $2
+       ORDER BY created_at DESC`,
+      [range.startMs, range.endMs]
+    );
+
+    const rows = result.rows.map(mapOrder);
+    const orderCount = rows.length;
+    const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
+    const pizzaCount = countPizzaFromOrders(rows);
+
+    res.json({
+      year: range.label,
+      orderCount,
+      total,
+      pizzaCount
+    });
+  } catch (err) {
+    console.error("年度摘要失敗:", err);
+    res.status(500).json({ error: "年度摘要失敗" });
+  }
+});
+
+app.get("/report/daily-summary", async (req, res) => {
+  try {
+    const range = getDateRange(req.query.date);
+
+    const result = await pool.query(
+      `SELECT *
+       FROM orders
+       WHERE status = 'done'
+         AND created_at >= $1
+         AND created_at <= $2
+       ORDER BY created_at DESC`,
+      [range.startMs, range.endMs]
+    );
+
+    const rows = result.rows.map(mapOrder);
+    const orderCount = rows.length;
+    const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
+    const pizzaCount = countPizzaFromOrders(rows);
+
+    res.json({
+      date: range.label,
+      orderCount,
+      total,
+      pizzaCount
+    });
+  } catch (err) {
+    console.error("單日摘要失敗:", err);
+    res.status(500).json({ error: "單日摘要失敗" });
+  }
+});
+
+app.get("/report/year", async (req, res) => {
+  try {
+    const range = getYearRange();
+
+    const result = await pool.query(
+      `SELECT
+         COUNT(*)::int AS "orderCount",
+         COALESCE(SUM(price), 0)::int AS total
+       FROM orders
+       WHERE status = 'done'
+         AND created_at >= $1
+         AND created_at <= $2`,
+      [range.startMs, range.endMs]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("本年報表失敗:", err);
+    res.status(500).json({ error: "本年報表失敗" });
   }
 });
 
