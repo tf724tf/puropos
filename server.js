@@ -24,10 +24,29 @@ async function initDb() {
       price INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'pending',
       created_at BIGINT NOT NULL,
+      completed_at BIGINT,
       deleted_at BIGINT,
       delete_reason TEXT
     )
   `);
+
+  const result = await pool.query(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_name = 'orders'
+  `);
+
+  const cols = result.rows.map(r => r.column_name);
+
+  if (!cols.includes("completed_at")) {
+    await pool.query(`ALTER TABLE orders ADD COLUMN completed_at BIGINT`);
+  }
+  if (!cols.includes("deleted_at")) {
+    await pool.query(`ALTER TABLE orders ADD COLUMN deleted_at BIGINT`);
+  }
+  if (!cols.includes("delete_reason")) {
+    await pool.query(`ALTER TABLE orders ADD COLUMN delete_reason TEXT`);
+  }
 }
 
 function mapOrder(row) {
@@ -37,6 +56,7 @@ function mapOrder(row) {
     price: Number(row.price || 0),
     status: row.status,
     createdAt: Number(row.created_at || 0),
+    completedAt: row.completed_at ? Number(row.completed_at) : null,
     deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
     deleteReason: row.delete_reason || null,
   };
@@ -74,8 +94,7 @@ app.get("/orders", async (req, res) => {
     const result = await pool.query(
       `SELECT *
        FROM orders
-       WHERE status <> 'deleted'
-       ORDER BY created_at DESC`
+       WHERE status <> 'deleted'`
     );
 
     res.json(result.rows.map(mapOrder));
@@ -134,9 +153,10 @@ app.post("/done/:id", async (req, res) => {
   try {
     await pool.query(
       `UPDATE orders
-       SET status = 'done'
-       WHERE id = $1`,
-      [req.params.id]
+       SET status = 'done',
+           completed_at = $1
+       WHERE id = $2`,
+      [Date.now(), req.params.id]
     );
 
     const waitingResult = await pool.query(
