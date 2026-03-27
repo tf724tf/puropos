@@ -23,17 +23,35 @@
       font-size: 36px;
     }
 
+    .top-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
     .top-link {
       display: inline-block;
-      margin-bottom: 18px;
       font-size: 16px;
       text-decoration: none;
       color: #333;
     }
 
+    .logout-btn {
+      padding: 10px 16px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      background: black;
+      color: white;
+      cursor: pointer;
+    }
+
     .cards {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -166,46 +184,51 @@
 </head>
 <body>
   <div class="wrap">
-    <a class="top-link" href="/admin.html">← 回櫃檯後台</a>
+    <div class="top-row">
+      <a class="top-link" href="/admin.html">← 回櫃檯後台</a>
+      <button class="logout-btn" onclick="logout()">登出</button>
+    </div>
+
     <h1>📊 銷售報表 / 歷史訂單</h1>
 
     <div class="section">
-      <h2>📅 月份查詢</h2>
+      <h2>📅 查詢單日 / 單月 / 單年</h2>
       <div class="filters">
+        <input type="date" id="day-picker" />
+        <button onclick="loadDayData()">查詢單日</button>
+
         <input type="month" id="month-picker" />
-        <button onclick="loadMonthData()">查詢月份</button>
+        <button onclick="loadMonthData()">查詢單月</button>
+
+        <input type="number" id="year-picker" placeholder="例如 2026" min="2020" max="2100" />
+        <button onclick="loadYearData()">查詢單年</button>
+
         <button onclick="exportExcel()">匯出 Excel</button>
       </div>
     </div>
 
     <div class="cards">
       <div class="card">
-        <div class="card-title">今日營業額</div>
-        <div class="card-value" id="today-total">$0</div>
-        <div id="today-count" class="card-sub">0 筆</div>
+        <div class="card-title">單日查詢結果</div>
+        <div class="card-value" id="day-total">$0</div>
+        <div id="day-sub" class="card-sub">0 筆 / 0 張 Pizza</div>
       </div>
 
       <div class="card">
-        <div class="card-title">查詢月份營業額</div>
+        <div class="card-title">單月查詢結果</div>
         <div class="card-value" id="month-total">$0</div>
-        <div id="month-count" class="card-sub">0 筆</div>
+        <div id="month-sub" class="card-sub">0 筆 / 0 張 Pizza</div>
       </div>
 
       <div class="card">
-        <div class="card-title">查詢月份 Pizza 銷售</div>
-        <div class="card-value" id="month-pizza-count">0 張</div>
-        <div id="month-label" class="card-sub">尚未查詢</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">本年營業額</div>
+        <div class="card-title">單年查詢結果</div>
         <div class="card-value" id="year-total">$0</div>
-        <div id="year-count" class="card-sub">0 筆</div>
+        <div id="year-sub" class="card-sub">0 筆 / 0 張 Pizza</div>
       </div>
     </div>
 
     <div class="section">
-      <h2>🔥 熱銷商品排行（依查詢月份）</h2>
+      <h2>🔥 熱銷商品排行（依單月查詢）</h2>
       <table>
         <thead>
           <tr>
@@ -221,7 +244,7 @@
     </div>
 
     <div class="section">
-      <h2>🧾 歷史交易列表</h2>
+      <h2>🧾 歷史交易列表（預設當月）</h2>
 
       <div class="filters">
         <input type="date" id="date-from" />
@@ -265,10 +288,6 @@
       return d.toLocaleString("zh-TW");
     }
 
-    function getSelectedMonth() {
-      return document.getElementById("month-picker").value;
-    }
-
     function statusHtml(row) {
       const map = {
         done: ["完成", "status-done"],
@@ -289,26 +308,26 @@
       `;
     }
 
-    async function loadFixedSummary() {
-      const today = await fetch("/report/today").then(r => r.json());
-      const year = await fetch("/report/year").then(r => r.json());
+    async function logout() {
+      await fetch("/report-logout", { method: "POST" });
+      window.location.href = "/report-login.html";
+    }
 
-      document.getElementById("today-total").innerText = money(today.total);
-      document.getElementById("today-count").innerText = `${today.orderCount || 0} 筆`;
+    async function loadDayData() {
+      const date = document.getElementById("day-picker").value;
+      const data = await fetch(`/report/daily-summary?date=${encodeURIComponent(date)}`).then(r => r.json());
 
-      document.getElementById("year-total").innerText = money(year.total);
-      document.getElementById("year-count").innerText = `${year.orderCount || 0} 筆`;
+      document.getElementById("day-total").innerText = money(data.total);
+      document.getElementById("day-sub").innerText = `${data.date || ""}｜${data.orderCount || 0} 筆 / ${data.pizzaCount || 0} 張 Pizza`;
     }
 
     async function loadMonthData() {
-      const month = getSelectedMonth();
+      const month = document.getElementById("month-picker").value;
       const summary = await fetch(`/report/monthly-summary?month=${encodeURIComponent(month)}`).then(r => r.json());
       const items = await fetch(`/report/items?month=${encodeURIComponent(month)}`).then(r => r.json());
 
       document.getElementById("month-total").innerText = money(summary.total);
-      document.getElementById("month-count").innerText = `${summary.orderCount || 0} 筆`;
-      document.getElementById("month-pizza-count").innerText = `${summary.pizzaCount || 0} 張`;
-      document.getElementById("month-label").innerText = summary.month || "尚未查詢";
+      document.getElementById("month-sub").innerText = `${summary.month || ""}｜${summary.orderCount || 0} 筆 / ${summary.pizzaCount || 0} 張 Pizza`;
 
       const body = document.getElementById("item-rank-body");
 
@@ -328,19 +347,28 @@
       `).join("");
     }
 
+    async function loadYearData() {
+      const year = document.getElementById("year-picker").value;
+      const data = await fetch(`/report/yearly-summary?year=${encodeURIComponent(year)}`).then(r => r.json());
+
+      document.getElementById("year-total").innerText = money(data.total);
+      document.getElementById("year-sub").innerText = `${data.year || ""}｜${data.orderCount || 0} 筆 / ${data.pizzaCount || 0} 張 Pizza`;
+    }
+
     async function loadHistory() {
       const dateFrom = document.getElementById("date-from").value;
       const dateTo = document.getElementById("date-to").value;
       const keyword = document.getElementById("keyword").value.trim();
       const statusFilter = document.getElementById("status-filter").value;
-      const month = getSelectedMonth();
+      const month = document.getElementById("month-picker").value;
 
       const params = new URLSearchParams();
+
+      if (month) params.append("month", month);
       if (dateFrom) params.append("dateFrom", dateFrom);
       if (dateTo) params.append("dateTo", dateTo);
       if (keyword) params.append("keyword", keyword);
       if (statusFilter) params.append("status", statusFilter);
-      if (month) params.append("month", month);
 
       const rows = await fetch("/report/history?" + params.toString()).then(r => r.json());
       const body = document.getElementById("history-body");
@@ -370,27 +398,32 @@
       const dateTo = document.getElementById("date-to").value;
       const keyword = document.getElementById("keyword").value.trim();
       const statusFilter = document.getElementById("status-filter").value;
-      const month = getSelectedMonth();
+      const month = document.getElementById("month-picker").value;
 
       const params = new URLSearchParams();
+      if (month) params.append("month", month);
       if (dateFrom) params.append("dateFrom", dateFrom);
       if (dateTo) params.append("dateTo", dateTo);
       if (keyword) params.append("keyword", keyword);
       if (statusFilter) params.append("status", statusFilter);
-      if (month) params.append("month", month);
 
       window.open("/report/export?" + params.toString(), "_blank");
     }
 
-    function setDefaultMonth() {
+    function setDefaults() {
       const now = new Date();
-      const value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      document.getElementById("month-picker").value = value;
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+      document.getElementById("month-picker").value = month;
+      document.getElementById("year-picker").value = now.getFullYear();
+      document.getElementById("day-picker").value = date;
     }
 
-    setDefaultMonth();
-    loadFixedSummary();
+    setDefaults();
+    loadDayData();
     loadMonthData();
+    loadYearData();
     loadHistory();
   </script>
 </body>
