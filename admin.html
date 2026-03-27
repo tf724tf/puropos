@@ -26,7 +26,6 @@ h1{margin:0 0 10px;}
 .done-btn{background:#2563eb;color:white;}
 .delete-btn{background:#dc2626;color:white;}
 .edit-btn{background:#f59e0b;color:white;}
-
 .modal-bg{
   position:fixed;inset:0;background:rgba(0,0,0,0.45);
   display:none;align-items:center;justify-content:center;z-index:9999;
@@ -57,10 +56,10 @@ h1{margin:0 0 10px;}
   <h1>PURO POS 後台</h1>
 
   <div class="topbar">
-    <button class="btn" onclick="loadOrders()">刷新</button>
-    <a href="/order.html" target="_blank"><button class="btn">客人點餐頁</button></a>
-    <a href="/report.html" target="_blank"><button class="btn">銷售報表</button></a>
-    <button class="btn" onclick="createTest()">建立測試訂單</button>
+    <button type="button" class="btn" onclick="loadOrders(true)">刷新</button>
+    <a href="/order.html" target="_blank"><button type="button" class="btn">客人點餐頁</button></a>
+    <a href="/report.html" target="_blank"><button type="button" class="btn">銷售報表</button></a>
+    <button type="button" class="btn" onclick="createTest()">建立測試訂單</button>
   </div>
 
   <div class="section">
@@ -89,10 +88,10 @@ h1{margin:0 0 10px;}
     <h3>修改訂單</h3>
     <div id="editor-list"></div>
     <div class="editor-actions">
-      <button class="small-btn" onclick="addEditorRow('pizza')">+ 加 Pizza</button>
-      <button class="small-btn" onclick="addEditorRow('drink')">+ 加 飲料/冰淇淋</button>
-      <button class="small-btn" onclick="saveEdit()">儲存修改</button>
-      <button class="small-btn" onclick="closeModal()">取消</button>
+      <button type="button" class="small-btn" onclick="addEditorRow('pizza')">+ 加 Pizza</button>
+      <button type="button" class="small-btn" onclick="addEditorRow('drink')">+ 加 飲料/冰淇淋</button>
+      <button type="button" class="small-btn" onclick="saveEdit()">儲存修改</button>
+      <button type="button" class="small-btn" onclick="closeModal()">取消</button>
     </div>
     <div class="total-box">總價：<span id="editor-total">$0</span></div>
   </div>
@@ -112,16 +111,16 @@ function buildOrderHtml(o, type){
   if(type === "pending"){
     buttons = `
       <div class="action-row">
-        <button class="pay-btn" onclick="pay('${o.id}')">💰 收款</button>
-        <button class="edit-btn" onclick="openEditModal('${o.id}')">✏️ 修改</button>
-        <button class="delete-btn" onclick="deleteOrder('${o.id}')">🗑 刪除</button>
+        <button type="button" class="pay-btn" onclick="pay('${o.id}')">💰 收款</button>
+        <button type="button" class="edit-btn" onclick="openEditModal('${o.id}')">✏️ 修改</button>
+        <button type="button" class="delete-btn" onclick="deleteOrder('${o.id}')">🗑 刪除</button>
       </div>
     `;
   }
   if(type === "making"){
     buttons = `
       <div class="action-row">
-        <button class="done-btn" onclick="doneOrder('${o.id}')">✅ 完成</button>
+        <button type="button" class="done-btn" onclick="doneOrder('${o.id}')">✅ 完成</button>
       </div>
     `;
   }
@@ -135,26 +134,46 @@ function buildOrderHtml(o, type){
   `;
 }
 
-async function loadOrders(){
-  const res = await fetch("/orders");
-  const orders = await res.json();
+async function loadOrders(showMessage = false){
+  try {
+    const res = await fetch("/orders?_t=" + Date.now(), { cache: "no-store" });
+    const orders = await res.json();
 
-  const pending = document.getElementById("pending");
-  const making = document.getElementById("making");
-  const waiting = document.getElementById("waiting");
-  const done = document.getElementById("done");
+    const pendingOrders = orders
+      .filter(o => o.status === "pending")
+      .sort((a, b) => a.createdAt - b.createdAt); // 舊上新下
 
-  pending.innerHTML = "";
-  making.innerHTML = "";
-  waiting.innerHTML = "";
-  done.innerHTML = "";
+    const makingOrders = orders
+      .filter(o => o.status === "making")
+      .sort((a, b) => a.createdAt - b.createdAt); // 先付款在上
+       
+    const waitingOrders = orders
+      .filter(o => o.status === "waiting")
+      .sort((a, b) => a.createdAt - b.createdAt); // 排隊照付款順序
 
-  orders.forEach(o => {
-    if(o.status === "pending") pending.innerHTML += buildOrderHtml(o, "pending");
-    else if(o.status === "making") making.innerHTML += buildOrderHtml(o, "making");
-    else if(o.status === "waiting") waiting.innerHTML += buildOrderHtml(o, "waiting");
-    else if(o.status === "done") done.innerHTML += buildOrderHtml(o, "done");
-  });
+    const doneOrders = orders
+      .filter(o => o.status === "done")
+      .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)); // 最新完成在上
+
+    document.getElementById("pending").innerHTML =
+      pendingOrders.map(o => buildOrderHtml(o, "pending")).join("");
+
+    document.getElementById("making").innerHTML =
+      makingOrders.map(o => buildOrderHtml(o, "making")).join("");
+
+    document.getElementById("waiting").innerHTML =
+      waitingOrders.map(o => buildOrderHtml(o, "waiting")).join("");
+
+    document.getElementById("done").innerHTML =
+      doneOrders.map(o => buildOrderHtml(o, "done")).join("");
+
+    if (showMessage) {
+      console.log("已刷新");
+    }
+  } catch (err) {
+    console.error("刷新失敗", err);
+    alert("刷新失敗，請稍後再試");
+  }
 }
 
 async function pay(id){
@@ -208,7 +227,7 @@ function createPizzaRowHtml(item = null){
       <label>價格</label>
       <input class="row-price" type="number" value="${item?.price || 0}" />
 
-      <button class="small-btn remove-item-btn" onclick="removeEditorRow(this)">刪除此品項</button>
+      <button type="button" class="small-btn remove-item-btn" onclick="removeEditorRow(this)">刪除此品項</button>
     </div>
   `;
 }
@@ -228,7 +247,7 @@ function createDrinkRowHtml(item = null){
       <label>價格</label>
       <input class="row-price" type="number" value="${item?.price || 0}" />
 
-      <button class="small-btn remove-item-btn" onclick="removeEditorRow(this)">刪除此品項</button>
+      <button type="button" class="small-btn remove-item-btn" onclick="removeEditorRow(this)">刪除此品項</button>
     </div>
   `;
 }
