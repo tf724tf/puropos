@@ -278,6 +278,28 @@
   </div>
 
   <script>
+    const REPORT_TOKEN = sessionStorage.getItem("report_auth_token");
+
+    if (!REPORT_TOKEN) {
+      window.location.href = "/report-login.html";
+    }
+
+    async function apiFetch(url) {
+      const res = await fetch(url, {
+        headers: {
+          "x-report-token": REPORT_TOKEN
+        }
+      });
+
+      if (res.status === 401) {
+        sessionStorage.removeItem("report_auth_token");
+        window.location.href = "/report-login.html";
+        throw new Error("未授權");
+      }
+
+      return res;
+    }
+
     function money(n) {
       return "$" + Number(n || 0);
     }
@@ -308,14 +330,15 @@
       `;
     }
 
-    async function logout() {
-      await fetch("/report-logout", { method: "POST" });
+    function logout() {
+      sessionStorage.removeItem("report_auth_token");
       window.location.href = "/report-login.html";
     }
 
     async function loadDayData() {
       const date = document.getElementById("day-picker").value;
-      const data = await fetch(`/report/daily-summary?date=${encodeURIComponent(date)}`).then(r => r.json());
+      const res = await apiFetch(`/report/daily-summary?date=${encodeURIComponent(date)}`);
+      const data = await res.json();
 
       document.getElementById("day-total").innerText = money(data.total);
       document.getElementById("day-sub").innerText = `${data.date || ""}｜${data.orderCount || 0} 筆 / ${data.pizzaCount || 0} 張 Pizza`;
@@ -323,8 +346,11 @@
 
     async function loadMonthData() {
       const month = document.getElementById("month-picker").value;
-      const summary = await fetch(`/report/monthly-summary?month=${encodeURIComponent(month)}`).then(r => r.json());
-      const items = await fetch(`/report/items?month=${encodeURIComponent(month)}`).then(r => r.json());
+      const summaryRes = await apiFetch(`/report/monthly-summary?month=${encodeURIComponent(month)}`);
+      const summary = await summaryRes.json();
+
+      const itemsRes = await apiFetch(`/report/items?month=${encodeURIComponent(month)}`);
+      const items = await itemsRes.json();
 
       document.getElementById("month-total").innerText = money(summary.total);
       document.getElementById("month-sub").innerText = `${summary.month || ""}｜${summary.orderCount || 0} 筆 / ${summary.pizzaCount || 0} 張 Pizza`;
@@ -349,7 +375,8 @@
 
     async function loadYearData() {
       const year = document.getElementById("year-picker").value;
-      const data = await fetch(`/report/yearly-summary?year=${encodeURIComponent(year)}`).then(r => r.json());
+      const res = await apiFetch(`/report/yearly-summary?year=${encodeURIComponent(year)}`);
+      const data = await res.json();
 
       document.getElementById("year-total").innerText = money(data.total);
       document.getElementById("year-sub").innerText = `${data.year || ""}｜${data.orderCount || 0} 筆 / ${data.pizzaCount || 0} 張 Pizza`;
@@ -370,7 +397,9 @@
       if (keyword) params.append("keyword", keyword);
       if (statusFilter) params.append("status", statusFilter);
 
-      const rows = await fetch("/report/history?" + params.toString()).then(r => r.json());
+      const res = await apiFetch("/report/history?" + params.toString());
+      const rows = await res.json();
+
       const body = document.getElementById("history-body");
 
       if (!rows.length) {
