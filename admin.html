@@ -26,6 +26,7 @@ h1{margin:0 0 10px;}
 .done-btn{background:#2563eb;color:white;}
 .delete-btn{background:#dc2626;color:white;}
 .edit-btn{background:#f59e0b;color:white;}
+
 .modal-bg{
   position:fixed;inset:0;background:rgba(0,0,0,0.45);
   display:none;align-items:center;justify-content:center;z-index:9999;
@@ -48,6 +49,7 @@ h1{margin:0 0 10px;}
 }
 .remove-item-btn{background:#dc2626;}
 .total-box{font-size:28px;font-weight:900;color:#c95a00;margin-top:12px;}
+.empty-text{color:#777;font-size:18px;padding:8px 0;}
 </style>
 </head>
 <body>
@@ -59,7 +61,6 @@ h1{margin:0 0 10px;}
     <button type="button" class="btn" onclick="loadOrders(true)">刷新</button>
     <a href="/order.html" target="_blank"><button type="button" class="btn">客人點餐頁</button></a>
     <a href="/report.html" target="_blank"><button type="button" class="btn">銷售報表</button></a>
-    <button type="button" class="btn" onclick="createTest()">建立測試訂單</button>
   </div>
 
   <div class="section">
@@ -78,7 +79,7 @@ h1{margin:0 0 10px;}
   </div>
 
   <div class="section">
-    <h2>完成</h2>
+    <h2>完成（僅今日）</h2>
     <div id="done"></div>
   </div>
 </div>
@@ -134,42 +135,48 @@ function buildOrderHtml(o, type){
   `;
 }
 
+function getTodayStart() {
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  return d.getTime();
+}
+
 async function loadOrders(showMessage = false){
   try {
     const res = await fetch("/orders?_t=" + Date.now(), { cache: "no-store" });
     const orders = await res.json();
 
+    const todayStart = getTodayStart();
+
     const pendingOrders = orders
       .filter(o => o.status === "pending")
-      .sort((a, b) => a.createdAt - b.createdAt); // 舊上新下
+      .sort((a, b) => a.createdAt - b.createdAt);
 
     const makingOrders = orders
       .filter(o => o.status === "making")
-      .sort((a, b) => a.createdAt - b.createdAt); // 先付款在上
-       
+      .sort((a, b) => a.createdAt - b.createdAt);
+
     const waitingOrders = orders
       .filter(o => o.status === "waiting")
-      .sort((a, b) => a.createdAt - b.createdAt); // 排隊照付款順序
+      .sort((a, b) => a.createdAt - b.createdAt);
 
     const doneOrders = orders
-      .filter(o => o.status === "done")
-      .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)); // 最新完成在上
+      .filter(o => o.status === "done" && (o.completedAt || 0) >= todayStart)
+      .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
 
     document.getElementById("pending").innerHTML =
-      pendingOrders.map(o => buildOrderHtml(o, "pending")).join("");
+      pendingOrders.length ? pendingOrders.map(o => buildOrderHtml(o, "pending")).join("") : `<div class="empty-text">目前沒有未收款訂單</div>`;
 
     document.getElementById("making").innerHTML =
-      makingOrders.map(o => buildOrderHtml(o, "making")).join("");
+      makingOrders.length ? makingOrders.map(o => buildOrderHtml(o, "making")).join("") : `<div class="empty-text">目前沒有製作中訂單</div>`;
 
     document.getElementById("waiting").innerHTML =
-      waitingOrders.map(o => buildOrderHtml(o, "waiting")).join("");
+      waitingOrders.length ? waitingOrders.map(o => buildOrderHtml(o, "waiting")).join("") : `<div class="empty-text">目前沒有排隊中訂單</div>`;
 
     document.getElementById("done").innerHTML =
-      doneOrders.map(o => buildOrderHtml(o, "done")).join("");
+      doneOrders.length ? doneOrders.map(o => buildOrderHtml(o, "done")).join("") : `<div class="empty-text">今天還沒有完成訂單</div>`;
 
-    if (showMessage) {
-      console.log("已刷新");
-    }
+    if (showMessage) console.log("已刷新");
   } catch (err) {
     console.error("刷新失敗", err);
     alert("刷新失敗，請稍後再試");
@@ -386,20 +393,6 @@ async function saveEdit(){
   }
 
   closeModal();
-  loadOrders();
-}
-
-async function createTest(){
-  await fetch("/order", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      items: [
-        { name:"測試Pizza", size:"圓形", price:200 }
-      ],
-      price:200
-    })
-  });
   loadOrders();
 }
 
