@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const { Pool } = require("pg");
+const XLSX = require("xlsx");
 
 const app = express();
 
@@ -62,6 +63,111 @@ function mapOrder(row) {
   };
 }
 
+function getTodayRange() {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  return {
+    startMs: start.getTime(),
+    endMs: Date.now(),
+  };
+}
+
+function getMonthRange(monthString) {
+  let year;
+  let month;
+
+  if (monthString && /^\d{4}-\d{2}$/.test(monthString)) {
+    const parts = monthString.split("-");
+    year = Number(parts[0]);
+    month = Number(parts[1]) - 1;
+  } else {
+    const now = new Date();
+    year = now.getFullYear();
+    month = now.getMonth();
+  }
+
+  const start = new Date(year, month, 1, 0, 0, 0, 0);
+  const end = new Date(year, month + 1, 1, 0, 0, 0, 0);
+
+  return {
+    startMs: start.getTime(),
+    endMs: end.getTime() - 1,
+    label: `${year}-${String(month + 1).padStart(2, "0")}`,
+  };
+}
+
+function getYearRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+  return {
+    startMs: start.getTime(),
+    endMs: Date.now(),
+  };
+}
+
+function countPizzaFromOrders(rows) {
+  let pizzaCount = 0;
+
+  rows.forEach(row => {
+    const items = row.items || [];
+    items.forEach(item => {
+      if (item.size === "方形" || item.size === "圓形") {
+        pizzaCount += 1;
+      }
+    });
+  });
+
+  return pizzaCount;
+}
+
+function buildHistoryFilter(reqQuery) {
+  const { dateFrom, dateTo, keyword, status, month } = reqQuery;
+
+  let sql = `SELECT * FROM orders WHERE 1=1`;
+  const params = [];
+  let idx = 1;
+
+  if (month) {
+    const range = getMonthRange(month);
+    sql += ` AND created_at >= $${idx++} AND created_at <= $${idx++}`;
+    params.push(range.startMs, range.endMs);
+  }
+
+  if (dateFrom) {
+    const start = new Date(dateFrom);
+    start.setHours(0, 0, 0, 0);
+    sql += ` AND created_at >= $${idx++}`;
+    params.push(start.getTime());
+  }
+
+  if (dateTo) {
+    const end = new Date(dateTo);
+    end.setHours(23, 59, 59, 999);
+    sql += ` AND created_at <= $${idx++}`;
+    params.push(end.getTime());
+  }
+
+  if (status) {
+    sql += ` AND status = $${idx++}`;
+    params.push(status);
+  }
+
+  sql += ` ORDER BY created_at DESC`;
+
+  return { sql, params, keyword };
+}
+
+function filterRowsByKeyword(rows, keyword) {
+  if (!keyword) return rows;
+
+  return rows.filter((row) => {
+    if ((row.id || "").includes(keyword)) return true;
+    return (row.items || []).some((item) =>
+      (item.name || "").includes(keyword)
+    );
+  });
+}
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "admin.html"));
 });
@@ -94,7 +200,8 @@ app.get("/orders", async (req, res) => {
     const result = await pool.query(
       `SELECT *
        FROM orders
-       WHERE status <> 'deleted'`
+       WHERE status <> 'deleted'
+       ORDER BY created_at DESC`
     );
 
     res.json(result.rows.map(mapOrder));
@@ -255,8 +362,7 @@ app.post("/update-order/:id", async (req, res) => {
 
 app.get("/report/today", async (req, res) => {
   try {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
+    const range = getTodayRange();
 
     const result = await pool.query(
       `SELECT
@@ -264,8 +370,9 @@ app.get("/report/today", async (req, res) => {
          COALESCE(SUM(price), 0)::int AS total
        FROM orders
        WHERE status = 'done'
-         AND created_at >= $1`,
-      [start.getTime()]
+         AND created_at >= $1
+         AND created_at <= $2`,
+      [range.startMs, range.endMs]
     );
 
     res.json(result.rows[0]);
@@ -277,8 +384,7 @@ app.get("/report/today", async (req, res) => {
 
 app.get("/report/month", async (req, res) => {
   try {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const range = getMonthRange();
 
     const result = await pool.query(
       `SELECT
@@ -286,8 +392,9 @@ app.get("/report/month", async (req, res) => {
          COALESCE(SUM(price), 0)::int AS total
        FROM orders
        WHERE status = 'done'
-         AND created_at >= $1`,
-      [start.getTime()]
+         AND created_at >= $1
+         AND created_at <= $2`,
+      [range.startMs, range.endMs]
     );
 
     res.json(result.rows[0]);
@@ -299,8 +406,7 @@ app.get("/report/month", async (req, res) => {
 
 app.get("/report/year", async (req, res) => {
   try {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 1);
+    const range = getYearRange();
 
     const result = await pool.query(
       `SELECT
@@ -308,8 +414,9 @@ app.get("/report/year", async (req, res) => {
          COALESCE(SUM(price), 0)::int AS total
        FROM orders
        WHERE status = 'done'
-         AND created_at >= $1`,
-      [start.getTime()]
+         AND created_at >= $1
+         AND created_at <= $2`,
+      [range.startMs, range.endMs]
     );
 
     res.json(result.rows[0]);
@@ -319,42 +426,43 @@ app.get("/report/year", async (req, res) => {
   }
 });
 
+app.get("/report/monthly-summary", async (req, res) => {
+  try {
+    const range = getMonthRange(req.query.month);
+
+    const result = await pool.query(
+      `SELECT *
+       FROM orders
+       WHERE status = 'done'
+         AND created_at >= $1
+         AND created_at <= $2
+       ORDER BY created_at DESC`,
+      [range.startMs, range.endMs]
+    );
+
+    const rows = result.rows.map(mapOrder);
+    const orderCount = rows.length;
+    const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
+    const pizzaCount = countPizzaFromOrders(rows);
+
+    res.json({
+      month: range.label,
+      orderCount,
+      total,
+      pizzaCount
+    });
+  } catch (err) {
+    console.error("月份摘要失敗:", err);
+    res.status(500).json({ error: "月份摘要失敗" });
+  }
+});
+
 app.get("/report/history", async (req, res) => {
   try {
-    const { dateFrom, dateTo, keyword } = req.query;
-
-    let sql = `SELECT * FROM orders WHERE 1=1`;
-    const params = [];
-    let idx = 1;
-
-    if (dateFrom) {
-      const start = new Date(dateFrom);
-      start.setHours(0, 0, 0, 0);
-      sql += ` AND created_at >= $${idx++}`;
-      params.push(start.getTime());
-    }
-
-    if (dateTo) {
-      const end = new Date(dateTo);
-      end.setHours(23, 59, 59, 999);
-      sql += ` AND created_at <= $${idx++}`;
-      params.push(end.getTime());
-    }
-
-    sql += ` ORDER BY created_at DESC`;
-
+    const { sql, params, keyword } = buildHistoryFilter(req.query);
     const result = await pool.query(sql, params);
     let rows = result.rows.map(mapOrder);
-
-    if (keyword) {
-      rows = rows.filter((row) => {
-        if ((row.id || "").includes(keyword)) return true;
-        return (row.items || []).some((item) =>
-          (item.name || "").includes(keyword)
-        );
-      });
-    }
-
+    rows = filterRowsByKeyword(rows, keyword);
     res.json(rows);
   } catch (err) {
     console.error("歷史訂單查詢失敗:", err);
@@ -364,11 +472,26 @@ app.get("/report/history", async (req, res) => {
 
 app.get("/report/items", async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT items
-       FROM orders
-       WHERE status = 'done'`
-    );
+    const month = req.query.month;
+    let result;
+
+    if (month) {
+      const range = getMonthRange(month);
+      result = await pool.query(
+        `SELECT items
+         FROM orders
+         WHERE status = 'done'
+           AND created_at >= $1
+           AND created_at <= $2`,
+        [range.startMs, range.endMs]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT items
+         FROM orders
+         WHERE status = 'done'`
+      );
+    }
 
     const map = {};
 
@@ -394,6 +517,72 @@ app.get("/report/items", async (req, res) => {
   } catch (err) {
     console.error("熱銷分析失敗:", err);
     res.status(500).json({ error: "熱銷分析失敗" });
+  }
+});
+
+app.get("/report/export", async (req, res) => {
+  try {
+    const { sql, params, keyword } = buildHistoryFilter(req.query);
+    const result = await pool.query(sql, params);
+    let rows = result.rows.map(mapOrder);
+    rows = filterRowsByKeyword(rows, keyword);
+
+    const exportRows = [];
+
+    rows.forEach(order => {
+      if ((order.items || []).length === 0) {
+        exportRows.push({
+          單號: order.id,
+          狀態: order.status,
+          建立時間: new Date(order.createdAt).toLocaleString("zh-TW"),
+          完成時間: order.completedAt ? new Date(order.completedAt).toLocaleString("zh-TW") : "",
+          品項: "",
+          尺寸: "",
+          品項金額: "",
+          訂單總額: order.price,
+          刪除原因: order.deleteReason || ""
+        });
+      } else {
+        order.items.forEach(item => {
+          exportRows.push({
+            單號: order.id,
+            狀態: order.status,
+            建立時間: new Date(order.createdAt).toLocaleString("zh-TW"),
+            完成時間: order.completedAt ? new Date(order.completedAt).toLocaleString("zh-TW") : "",
+            品項: item.name,
+            尺寸: item.size,
+            品項金額: item.price,
+            訂單總額: order.price,
+            刪除原因: order.deleteReason || ""
+          });
+        });
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+    XLSX.utils.book_append_sheet(wb, ws, "SalesReport");
+
+    const fileBuffer = XLSX.write(wb, {
+      type: "buffer",
+      bookType: "xlsx"
+    });
+
+    const filename = `puro-report-${Date.now()}.xlsx`;
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename}"`
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.send(fileBuffer);
+  } catch (err) {
+    console.error("匯出報表失敗:", err);
+    res.status(500).json({ error: "匯出報表失敗" });
   }
 });
 
