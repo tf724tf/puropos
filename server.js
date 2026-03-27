@@ -19,33 +19,6 @@ const pool = new Pool({
   },
 });
 
-function parseCookies(req) {
-  const header = req.headers.cookie || "";
-  const cookies = {};
-
-  header.split(";").forEach(part => {
-    const [key, ...rest] = part.trim().split("=");
-    if (!key) return;
-    cookies[key] = decodeURIComponent(rest.join("="));
-  });
-
-  return cookies;
-}
-
-function requireReportAuth(req, res, next) {
-  const cookies = parseCookies(req);
-
-  if (cookies.report_auth === "ok") {
-    return next();
-  }
-
-  if (req.path.startsWith("/report/") || req.path === "/report.html") {
-    return res.redirect("/report-login.html");
-  }
-
-  return res.status(401).json({ error: "未授權，請先登入報表系統" });
-}
-
 async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
@@ -89,15 +62,6 @@ function mapOrder(row) {
     completedAt: row.completed_at ? Number(row.completed_at) : null,
     deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
     deleteReason: row.delete_reason || null,
-  };
-}
-
-function getTodayRange() {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  return {
-    startMs: start.getTime(),
-    endMs: Date.now(),
   };
 }
 
@@ -230,9 +194,7 @@ function filterRowsByKeyword(rows, keyword) {
   });
 }
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "admin.html"));
-});
+// ====== 報表登入：用 tab token，不用 cookie ======
 
 app.get("/report-login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "report-login.html"));
@@ -245,21 +207,34 @@ app.post("/report-login", (req, res) => {
     return res.status(401).json({ error: "密碼錯誤" });
   }
 
-  res.setHeader(
-    "Set-Cookie",
-    "report_auth=ok; Path=/; HttpOnly; Max-Age=28800; SameSite=Lax"
-  );
-
-  res.json({ success: true });
+  // 簡化版：固定 token，給前端存 sessionStorage
+  res.json({
+    success: true,
+    token: "7929-ok"
+  });
 });
 
-app.post("/report-logout", (req, res) => {
-  res.setHeader(
-    "Set-Cookie",
-    "report_auth=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax"
-  );
-  res.json({ success: true });
+function requireReportToken(req, res, next) {
+  const token = req.headers["x-report-token"];
+
+  if (token === "7929-ok") {
+    return next();
+  }
+
+  return res.status(401).json({ error: "未授權，請先登入報表系統" });
+}
+
+// ====== 一般頁面 ======
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.html"));
 });
+
+app.get("/report.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "report.html"));
+});
+
+// ====== POS API ======
 
 app.post("/order", async (req, res) => {
   try {
@@ -449,105 +424,9 @@ app.post("/update-order/:id", async (req, res) => {
   }
 });
 
-app.use((req, res, next) => {
-  if (
-    req.path === "/report.html" ||
-    req.path.startsWith("/report/")
-  ) {
-    return requireReportAuth(req, res, next);
-  }
-  next();
-});
+// ====== 報表 API：全部加密碼保護 ======
 
-app.get("/report.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "report.html"));
-});
-
-app.get("/report/today", async (req, res) => {
-  try {
-    const range = getTodayRange();
-
-    const result = await pool.query(
-      `SELECT
-         COUNT(*)::int AS "orderCount",
-         COALESCE(SUM(price), 0)::int AS total
-       FROM orders
-       WHERE status = 'done'
-         AND created_at >= $1
-         AND created_at <= $2`,
-      [range.startMs, range.endMs]
-    );
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("今日報表失敗:", err);
-    res.status(500).json({ error: "今日報表失敗" });
-  }
-});
-
-app.get("/report/monthly-summary", async (req, res) => {
-  try {
-    const range = getMonthRange(req.query.month);
-
-    const result = await pool.query(
-      `SELECT *
-       FROM orders
-       WHERE status = 'done'
-         AND created_at >= $1
-         AND created_at <= $2
-       ORDER BY created_at DESC`,
-      [range.startMs, range.endMs]
-    );
-
-    const rows = result.rows.map(mapOrder);
-    const orderCount = rows.length;
-    const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
-    const pizzaCount = countPizzaFromOrders(rows);
-
-    res.json({
-      month: range.label,
-      orderCount,
-      total,
-      pizzaCount
-    });
-  } catch (err) {
-    console.error("月份摘要失敗:", err);
-    res.status(500).json({ error: "月份摘要失敗" });
-  }
-});
-
-app.get("/report/yearly-summary", async (req, res) => {
-  try {
-    const range = getYearRange(req.query.year);
-
-    const result = await pool.query(
-      `SELECT *
-       FROM orders
-       WHERE status = 'done'
-         AND created_at >= $1
-         AND created_at <= $2
-       ORDER BY created_at DESC`,
-      [range.startMs, range.endMs]
-    );
-
-    const rows = result.rows.map(mapOrder);
-    const orderCount = rows.length;
-    const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
-    const pizzaCount = countPizzaFromOrders(rows);
-
-    res.json({
-      year: range.label,
-      orderCount,
-      total,
-      pizzaCount
-    });
-  } catch (err) {
-    console.error("年度摘要失敗:", err);
-    res.status(500).json({ error: "年度摘要失敗" });
-  }
-});
-
-app.get("/report/daily-summary", async (req, res) => {
+app.get("/report/daily-summary", requireReportToken, async (req, res) => {
   try {
     const range = getDateRange(req.query.date);
 
@@ -578,29 +457,69 @@ app.get("/report/daily-summary", async (req, res) => {
   }
 });
 
-app.get("/report/year", async (req, res) => {
+app.get("/report/monthly-summary", requireReportToken, async (req, res) => {
   try {
-    const range = getYearRange();
+    const range = getMonthRange(req.query.month);
 
     const result = await pool.query(
-      `SELECT
-         COUNT(*)::int AS "orderCount",
-         COALESCE(SUM(price), 0)::int AS total
+      `SELECT *
        FROM orders
        WHERE status = 'done'
          AND created_at >= $1
-         AND created_at <= $2`,
+         AND created_at <= $2
+       ORDER BY created_at DESC`,
       [range.startMs, range.endMs]
     );
 
-    res.json(result.rows[0]);
+    const rows = result.rows.map(mapOrder);
+    const orderCount = rows.length;
+    const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
+    const pizzaCount = countPizzaFromOrders(rows);
+
+    res.json({
+      month: range.label,
+      orderCount,
+      total,
+      pizzaCount
+    });
   } catch (err) {
-    console.error("本年報表失敗:", err);
-    res.status(500).json({ error: "本年報表失敗" });
+    console.error("月份摘要失敗:", err);
+    res.status(500).json({ error: "月份摘要失敗" });
   }
 });
 
-app.get("/report/history", async (req, res) => {
+app.get("/report/yearly-summary", requireReportToken, async (req, res) => {
+  try {
+    const range = getYearRange(req.query.year);
+
+    const result = await pool.query(
+      `SELECT *
+       FROM orders
+       WHERE status = 'done'
+         AND created_at >= $1
+         AND created_at <= $2
+       ORDER BY created_at DESC`,
+      [range.startMs, range.endMs]
+    );
+
+    const rows = result.rows.map(mapOrder);
+    const orderCount = rows.length;
+    const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
+    const pizzaCount = countPizzaFromOrders(rows);
+
+    res.json({
+      year: range.label,
+      orderCount,
+      total,
+      pizzaCount
+    });
+  } catch (err) {
+    console.error("年度摘要失敗:", err);
+    res.status(500).json({ error: "年度摘要失敗" });
+  }
+});
+
+app.get("/report/history", requireReportToken, async (req, res) => {
   try {
     const { sql, params, keyword } = buildHistoryFilter(req.query);
     const result = await pool.query(sql, params);
@@ -613,7 +532,7 @@ app.get("/report/history", async (req, res) => {
   }
 });
 
-app.get("/report/items", async (req, res) => {
+app.get("/report/items", requireReportToken, async (req, res) => {
   try {
     const month = req.query.month;
     let result;
@@ -663,7 +582,7 @@ app.get("/report/items", async (req, res) => {
   }
 });
 
-app.get("/report/export", async (req, res) => {
+app.get("/report/export", requireReportToken, async (req, res) => {
   try {
     const { sql, params, keyword } = buildHistoryFilter(req.query);
     const result = await pool.query(sql, params);
