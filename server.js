@@ -8,9 +8,11 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));
 
 const REPORT_PASSWORD = "7929";
+const ADMIN_PASSWORD = "0101";
+const REPORT_TOKEN = "7929-ok";
+const ADMIN_TOKEN = "0101-ok";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -224,8 +226,14 @@ function filterRowsByKeyword(rows, keyword) {
 
 function requireReportToken(req, res, next) {
   const token = req.headers["x-report-token"] || req.query.token;
-  if (token === "7929-ok") return next();
+  if (token === REPORT_TOKEN) return next();
   return res.status(401).json({ error: "未授權，請先登入報表系統" });
+}
+
+function requireAdminToken(req, res, next) {
+  const token = req.headers["x-admin-token"] || req.query.token;
+  if (token === ADMIN_TOKEN) return next();
+  return res.status(401).json({ error: "未授權，請先登入後台" });
 }
 
 async function summaryByRange(startMs, endMs, labelKey, labelValue) {
@@ -252,16 +260,26 @@ async function summaryByRange(startMs, endMs, labelKey, labelValue) {
   };
 }
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "admin.html"));
+// ===== 登入頁 =====
+app.get("/admin-login.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin-login.html"));
 });
 
 app.get("/report-login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "report-login.html"));
 });
 
-app.get("/report.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "report.html"));
+app.post("/admin-login", (req, res) => {
+  const { password } = req.body || {};
+
+  if (String(password || "").trim() !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "密碼錯誤" });
+  }
+
+  res.json({
+    success: true,
+    token: ADMIN_TOKEN
+  });
 });
 
 app.post("/report-login", (req, res) => {
@@ -273,10 +291,32 @@ app.post("/report-login", (req, res) => {
 
   res.json({
     success: true,
-    token: "7929-ok"
+    token: REPORT_TOKEN
   });
 });
 
+// ===== 頁面 =====
+app.get("/", (req, res) => {
+  res.redirect("/admin-login.html");
+});
+
+app.get("/admin.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.get("/report.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "report.html"));
+});
+
+app.get("/order.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "order.html"));
+});
+
+app.get("/menu.js", (req, res) => {
+  res.sendFile(path.join(__dirname, "menu.js"));
+});
+
+// ===== 客人公開 API =====
 app.post("/order", async (req, res) => {
   try {
     const { items, price } = req.body;
@@ -300,7 +340,8 @@ app.post("/order", async (req, res) => {
   }
 });
 
-app.get("/orders", async (req, res) => {
+// ===== 後台 API（要 0101）=====
+app.get("/orders", requireAdminToken, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT *
@@ -316,7 +357,7 @@ app.get("/orders", async (req, res) => {
   }
 });
 
-app.get("/order/:id", async (req, res) => {
+app.get("/order/:id", requireAdminToken, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT *
@@ -336,7 +377,7 @@ app.get("/order/:id", async (req, res) => {
   }
 });
 
-app.post("/pay/:id", async (req, res) => {
+app.post("/pay/:id", requireAdminToken, async (req, res) => {
   try {
     const countResult = await pool.query(
       `SELECT COUNT(*)::int AS count
@@ -361,7 +402,7 @@ app.post("/pay/:id", async (req, res) => {
   }
 });
 
-app.post("/done/:id", async (req, res) => {
+app.post("/done/:id", requireAdminToken, async (req, res) => {
   try {
     await pool.query(
       `UPDATE orders
@@ -395,7 +436,7 @@ app.post("/done/:id", async (req, res) => {
   }
 });
 
-app.post("/refund/:id", async (req, res) => {
+app.post("/refund/:id", requireAdminToken, async (req, res) => {
   try {
     await pool.query(
       `UPDATE orders
@@ -413,7 +454,7 @@ app.post("/refund/:id", async (req, res) => {
   }
 });
 
-app.post("/delete/:id", async (req, res) => {
+app.post("/delete/:id", requireAdminToken, async (req, res) => {
   try {
     const { reason } = req.body || {};
 
@@ -437,7 +478,7 @@ app.post("/delete/:id", async (req, res) => {
   }
 });
 
-app.post("/update-order/:id", async (req, res) => {
+app.post("/update-order/:id", requireAdminToken, async (req, res) => {
   try {
     const { items } = req.body || {};
 
@@ -465,7 +506,7 @@ app.post("/update-order/:id", async (req, res) => {
   }
 });
 
-// 報表固定摘要
+// ===== 報表 API（要 7929）=====
 app.get("/report/overview", requireReportToken, async (req, res) => {
   try {
     const today = getTodayRange();
@@ -543,6 +584,7 @@ app.get("/report/history", requireReportToken, async (req, res) => {
     const result = await pool.query(sql, params);
     let rows = result.rows.map(mapOrder);
     rows = filterRowsByKeyword(rows, keyword);
+    rows = rows.slice(0, 10); // 只顯示最新 10 筆
     res.json(rows);
   } catch (err) {
     console.error("歷史訂單查詢失敗:", err);
@@ -600,7 +642,6 @@ app.get("/report/items", requireReportToken, async (req, res) => {
   }
 });
 
-// 當月 Excel 匯出：摘要 + 每日統計 + 熱銷 + 明細
 app.get("/report/export", requireReportToken, async (req, res) => {
   try {
     const month = req.query.month;
@@ -679,7 +720,6 @@ app.get("/report/export", requireReportToken, async (req, res) => {
     });
 
     const wb = XLSX.utils.book_new();
-
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), "月摘要");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dailyRows), "每日營業");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(itemRows), "熱銷排行");
@@ -697,6 +737,8 @@ app.get("/report/export", requireReportToken, async (req, res) => {
   }
 });
 
+app.use(express.static(__dirname));
+
 const PORT = process.env.PORT || 3000;
 
 initDb()
@@ -705,6 +747,10 @@ initDb()
       console.log("POS running on port " + PORT);
     });
   })
+  .catch((err) => {
+    console.error("DB init failed:", err);
+    process.exit(1);
+  });
   .catch((err) => {
     console.error("DB init failed:", err);
     process.exit(1);
