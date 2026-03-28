@@ -15,6 +15,7 @@ h1{margin:0 0 10px;}
 .order:last-child{border-bottom:none;}
 .order-id{font-size:22px;font-weight:800;margin-bottom:8px;}
 .item-line{margin:4px 0;font-size:18px;}
+.meta-line{font-size:16px;color:#555;margin:6px 0;}
 .price{color:#c95a00;font-weight:bold;font-size:28px;margin:10px 0;}
 .action-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;}
 .pay-btn,.done-btn,.delete-btn,.edit-btn{
@@ -47,6 +48,29 @@ h1{margin:0 0 10px;}
 .remove-item-btn{background:#dc2626;}
 .total-box{font-size:28px;font-weight:900;color:#c95a00;margin-top:12px;}
 .empty-text{color:#777;font-size:18px;padding:8px 0;}
+.pay-calc{
+  border:1px solid #ddd;
+  border-radius:12px;
+  padding:14px;
+  margin-top:12px;
+  background:#fafafa;
+}
+.pay-calc input, .pay-calc select{
+  width:100%;
+  box-sizing:border-box;
+  padding:12px;
+  margin-top:8px;
+  margin-bottom:12px;
+  font-size:18px;
+  border:1px solid #ccc;
+  border-radius:10px;
+}
+.pay-calc .calc-result{
+  font-size:22px;
+  font-weight:800;
+  color:#c95a00;
+  margin-bottom:12px;
+}
 </style>
 </head>
 <body>
@@ -85,6 +109,12 @@ h1{margin:0 0 10px;}
 <div id="modal-bg" class="modal-bg">
   <div class="modal">
     <h3>修改訂單</h3>
+    <label>內用 / 外帶</label>
+    <select id="edit-order-type">
+      <option value="內用">內用</option>
+      <option value="外帶">外帶</option>
+    </select>
+
     <div id="editor-list"></div>
     <div class="editor-actions">
       <button type="button" class="small-btn" onclick="addEditorRow('pizza')">+ 加 Pizza</button>
@@ -93,6 +123,26 @@ h1{margin:0 0 10px;}
       <button type="button" class="small-btn" onclick="closeModal()">取消</button>
     </div>
     <div class="total-box">總價：<span id="editor-total">$0</span></div>
+  </div>
+</div>
+
+<div id="pay-modal-bg" class="modal-bg">
+  <div class="modal">
+    <h3>收款計算</h3>
+    <div class="pay-calc">
+      <div>訂單金額</div>
+      <input id="pay-order-total" type="number" readonly />
+
+      <div>實收金額</div>
+      <input id="pay-paid-amount" type="number" placeholder="請輸入收多少" oninput="updateChange()" />
+
+      <div class="calc-result">找零：<span id="pay-change-result">$0</span></div>
+
+      <div class="editor-actions">
+        <button type="button" class="small-btn" onclick="confirmPay()">確認收款</button>
+        <button type="button" class="small-btn" onclick="closePayModal()">取消</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -106,6 +156,8 @@ if (!ADMIN_TOKEN) {
 
 const MENU = window.PURO_MENU;
 let currentEditingId = null;
+let currentPayId = null;
+let currentPayTotal = 0;
 
 async function adminFetch(url, options = {}) {
   const finalOptions = {
@@ -141,7 +193,7 @@ function buildOrderHtml(o, type){
   if(type === "pending"){
     buttons = `
       <div class="action-row">
-        <button type="button" class="pay-btn" onclick="pay('${o.id}')">💰 收款</button>
+        <button type="button" class="pay-btn" onclick="openPayModal('${o.id}', ${o.price})">💰 收款</button>
         <button type="button" class="edit-btn" onclick="openEditModal('${o.id}')">✏️ 修改</button>
         <button type="button" class="delete-btn" onclick="deleteOrder('${o.id}')">🗑 刪除</button>
       </div>
@@ -157,6 +209,7 @@ function buildOrderHtml(o, type){
   return `
     <div class="order">
       <div class="order-id">${o.id}</div>
+      <div class="meta-line">類型：${o.orderType || "內用"}</div>
       ${renderItems(o.items)}
       <div class="price">$${o.price || 0}</div>
       ${buttons}
@@ -212,8 +265,48 @@ async function loadOrders(showMessage = false){
   }
 }
 
-async function pay(id){
-  await adminFetch("/pay/" + id, { method:"POST" });
+function openPayModal(id, total){
+  currentPayId = id;
+  currentPayTotal = Number(total || 0);
+  document.getElementById("pay-order-total").value = currentPayTotal;
+  document.getElementById("pay-paid-amount").value = "";
+  document.getElementById("pay-change-result").innerText = "$0";
+  document.getElementById("pay-modal-bg").style.display = "flex";
+}
+
+function closePayModal(){
+  document.getElementById("pay-modal-bg").style.display = "none";
+  currentPayId = null;
+  currentPayTotal = 0;
+}
+
+function updateChange(){
+  const paid = Number(document.getElementById("pay-paid-amount").value || 0);
+  const change = Math.max(0, paid - currentPayTotal);
+  document.getElementById("pay-change-result").innerText = "$" + change;
+}
+
+async function confirmPay(){
+  const paidAmount = Number(document.getElementById("pay-paid-amount").value || 0);
+
+  if (!paidAmount || paidAmount < currentPayTotal) {
+    alert("收款金額不足");
+    return;
+  }
+
+  const res = await adminFetch("/pay/" + currentPayId, {
+    method:"POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paidAmount })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    alert(data.error || "收款失敗");
+    return;
+  }
+
+  closePayModal();
   loadOrders();
 }
 
@@ -343,6 +436,7 @@ async function openEditModal(id){
 
   const list = document.getElementById("editor-list");
   list.innerHTML = "";
+  document.getElementById("edit-order-type").value = order.orderType || "內用";
 
   (order.items || []).forEach(item => {
     const pizza = MENU.pizzas.find(p => p.name === item.name);
@@ -379,6 +473,7 @@ async function saveEdit(){
     return;
   }
 
+  const orderType = document.getElementById("edit-order-type").value;
   const items = [];
 
   rows.forEach(row => {
@@ -412,7 +507,7 @@ async function saveEdit(){
   const res = await adminFetch("/update-order/" + currentEditingId, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items })
+    body: JSON.stringify({ items, orderType })
   });
 
   const data = await res.json();
