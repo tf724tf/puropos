@@ -1,56 +1,424 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PURO Pizza 點餐</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .logo {
+      text-align: center;
+      font-size: 44px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .sub {
+      text-align: center;
+      color: #666;
+      margin-bottom: 20px;
+      font-size: 22px;
+    }
+
+    .section {
+      background: white;
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .type-tabs,
+    .menu-tabs {
+      display: grid;
+      gap: 12px;
+    }
+
+    .type-tabs {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .menu-tabs {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .tab-btn,
+    .add-btn,
+    .submit-btn,
+    .remove-btn,
+    .back-btn {
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 22px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .tab-btn,
+    .back-btn {
+      background: white;
+      border: 2px solid #ccc;
+      color: #222;
+    }
+
+    .active {
+      background: black !important;
+      color: white !important;
+      border-color: black !important;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .menu-item {
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+      background: #fff;
+    }
+
+    .menu-title {
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .menu-desc {
+      color: #666;
+      margin-bottom: 12px;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+
+    .pizza-size-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .size-card {
+      background: #111;
+      color: white;
+      border-radius: 16px;
+      padding: 18px 14px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 900;
+      border: none;
+    }
+
+    .size-title {
+      font-size: 24px;
+      margin-bottom: 6px;
+    }
+
+    .size-sub {
+      font-size: 15px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+    }
+
+    .size-price {
+      font-size: 28px;
+      color: #fbbf24;
+    }
+
+    .drink-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .drink-price {
+      color: #c95a00;
+      font-size: 26px;
+      font-weight: 900;
+    }
+
+    .add-btn {
+      background: black;
+      color: white;
+      font-size: 18px;
+      padding: 12px 18px;
+    }
+
+    .cart-title {
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+
+    .cart-item {
+      border-bottom: 1px solid #eee;
+      padding: 10px 0;
+    }
+
+    .cart-item:last-child {
+      border-bottom: none;
+    }
+
+    .remove-btn {
+      background: #dc2626;
+      color: white;
+      font-size: 16px;
+      padding: 10px 14px;
+      margin-top: 8px;
+    }
+
+    .total {
+      font-size: 30px;
+      font-weight: 900;
+      color: #c95a00;
+      margin-top: 14px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: #1f9d55;
+      color: white;
+      margin-top: 16px;
+    }
+
+    .success-box {
+      display: none;
+      background: #e8f7e8;
+      border: 1px solid #9fd29f;
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 800;
+      color: #0f7a0f;
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+
+    .muted {
+      color: #777;
+      font-size: 18px;
+    }
+
+    .type-banner {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #3730a3;
+      font-weight: 800;
+      margin-bottom: 14px;
+      font-size: 16px;
+    }
+
+    @media (max-width: 700px) {
+      .pizza-size-grid,
+      .type-tabs,
+      .menu-tabs {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
 <body>
+  <div class="wrap">
+    <div class="logo">🍕 PURO Pizza</div>
+    <div class="sub">選好後送出，請到櫃台付款</div>
 
-<h2>點餐</h2>
+    <div id="success-box" class="success-box"></div>
 
-<button onclick="type='內用'">內用</button>
-<button onclick="type='外帶'">外帶</button>
+    <div class="section">
+      <div style="font-size:28px;font-weight:900;margin-bottom:14px;">請先選擇用餐方式</div>
+      <div class="type-tabs">
+        <button id="type-dinein" class="tab-btn active" onclick="setOrderType('內用')">內用</button>
+        <button id="type-takeout" class="tab-btn" onclick="setOrderType('外帶')">外帶</button>
+      </div>
+    </div>
 
-<h3>Pizza</h3>
+    <div class="section">
+      <div class="type-banner">目前點餐類型：<span id="current-order-type">內用</span></div>
+      <div class="menu-tabs">
+        <button id="tab-pizza" class="tab-btn active" onclick="switchTab('pizza')">Pizza</button>
+        <button id="tab-drink" class="tab-btn" onclick="switchTab('drink')">飲料 / 冰淇淋</button>
+      </div>
+    </div>
 
-<button onclick="add('瑪格莉特','方形',190)">方形 190</button>
-<button onclick="add('瑪格莉特','圓形',270)">圓形 270</button>
+    <div class="section">
+      <div id="menu-list"></div>
+    </div>
 
-<h3>購物車</h3>
-<div id="cart"></div>
-<button onclick="submit()">送出</button>
+    <div class="section">
+      <div class="cart-title">購物車</div>
+      <div id="cart-list" class="muted">尚未加入任何品項</div>
+      <div class="total">總價：<span id="cart-total">$0</span></div>
+      <button class="submit-btn" onclick="submitOrder()">送出訂單</button>
+    </div>
+  </div>
 
-<script>
+  <script src="/menu.js"></script>
+  <script>
+    const MENU = window.PURO_MENU;
+    let currentTab = "pizza";
+    let cart = [];
+    let orderType = "內用";
 
-let cart=[];
-let type=null;
+    function setOrderType(type) {
+      orderType = type;
+      document.getElementById("type-dinein").classList.toggle("active", type === "內用");
+      document.getElementById("type-takeout").classList.toggle("active", type === "外帶");
+      document.getElementById("current-order-type").innerText = type;
+    }
 
-function add(name,size,price){
-  cart.push({name,size,price});
-  render();
-}
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById("tab-pizza").classList.toggle("active", tab === "pizza");
+      document.getElementById("tab-drink").classList.toggle("active", tab === "drink");
+      renderMenu();
+    }
 
-function render(){
-  document.getElementById("cart").innerHTML=
-    cart.map(i=>i.name+" "+i.size+" $"+i.price).join("<br>");
-}
+    function renderMenu() {
+      const list = document.getElementById("menu-list");
 
-async function submit(){
+      if (currentTab === "pizza") {
+        list.innerHTML = MENU.pizzas.map(item => `
+          <div class="menu-item">
+            <div class="menu-title">${item.name}</div>
+            <div class="menu-desc">${item.desc}</div>
 
-  if(!type) return alert("選內用外帶");
+            <div class="pizza-size-grid">
+              <button class="size-card" onclick="addPizza('${item.id}','方形',${item.square})">
+                <div class="size-title">方形</div>
+                <div class="size-sub">15×24CM</div>
+                <div class="size-price">$${item.square}</div>
+              </button>
 
-  const total = cart.reduce((s,i)=>s+i.price,0);
+              <button class="size-card" onclick="addPizza('${item.id}','圓形',${item.round})">
+                <div class="size-title">圓形</div>
+                <div class="size-sub">9吋</div>
+                <div class="size-price">$${item.round}</div>
+              </button>
+            </div>
+          </div>
+        `).join("");
+      } else {
+        list.innerHTML = MENU.drinks.map(item => `
+          <div class="menu-item">
+            <div class="drink-row">
+              <div>
+                <div class="menu-title">${item.name}</div>
+              </div>
+              <div class="drink-price">$${item.price}</div>
+            </div>
+            <div style="margin-top:12px;">
+              <button class="add-btn" onclick="addDrink('${item.id}',${item.price})">加入購物車</button>
+            </div>
+          </div>
+        `).join("");
+      }
+    }
 
-  const res = await fetch("/order",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({items:cart,price:total,type})
-  });
+    function addPizza(id, size, price) {
+      const item = MENU.pizzas.find(p => p.id === id);
+      cart.push({
+        name: item.name,
+        size,
+        price
+      });
+      renderCart();
+    }
 
-  const d=await res.json();
-  alert("號碼:"+d.id);
+    function addDrink(id, price) {
+      const item = MENU.drinks.find(d => d.id === id);
+      cart.push({
+        name: item.name,
+        size: "單品",
+        price
+      });
+      renderCart();
+    }
 
-  cart=[];
-  render();
-}
+    function removeCartItem(index) {
+      cart.splice(index, 1);
+      renderCart();
+    }
 
-</script>
+    function renderCart() {
+      const list = document.getElementById("cart-list");
+      const total = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+      document.getElementById("cart-total").innerText = "$" + total;
 
+      if (!cart.length) {
+        list.innerHTML = "尚未加入任何品項";
+        list.className = "muted";
+        return;
+      }
+
+      list.className = "";
+      list.innerHTML = cart.map((item, index) => `
+        <div class="cart-item">
+          <div>${item.name}｜${item.size}｜$${item.price}</div>
+          <button class="remove-btn" onclick="removeCartItem(${index})">刪除</button>
+        </div>
+      `).join("");
+    }
+
+    async function submitOrder() {
+      if (!cart.length) {
+        alert("請先加入品項");
+        return;
+      }
+
+      const total = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+
+      const res = await fetch("/order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          items: cart,
+          price: total,
+          orderType
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "送出失敗");
+        return;
+      }
+
+      document.getElementById("success-box").style.display = "block";
+      document.getElementById("success-box").innerHTML = `
+        訂單已送出<br>
+        取餐號碼：${data.id}<br>
+        類型：${orderType}
+      `;
+
+      cart = [];
+      renderCart();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    renderMenu();
+    renderCart();
+  </script>
 </body>
 </html>
