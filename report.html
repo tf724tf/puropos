@@ -51,7 +51,7 @@
 
     .cards {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -70,7 +70,7 @@
     }
 
     .card-value {
-      font-size: 32px;
+      font-size: 30px;
       font-weight: 900;
     }
 
@@ -192,6 +192,35 @@
     <h1>📊 銷售報表 / 歷史訂單</h1>
 
     <div class="section">
+      <h2>📌 固定累計摘要</h2>
+      <div class="cards">
+        <div class="card">
+          <div class="card-title">今日營業額</div>
+          <div class="card-value" id="today-total">$0</div>
+          <div id="today-sub" class="card-sub">0 筆 / 0 張 Pizza</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">昨日營業額</div>
+          <div class="card-value" id="yesterday-total">$0</div>
+          <div id="yesterday-sub" class="card-sub">0 筆 / 0 張 Pizza</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">本月累計營業額</div>
+          <div class="card-value" id="month-fixed-total">$0</div>
+          <div id="month-fixed-sub" class="card-sub">0 筆 / 0 張 Pizza</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">總累計營業額</div>
+          <div class="card-value" id="all-total">$0</div>
+          <div id="all-sub" class="card-sub">0 筆 / 0 張 Pizza</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
       <h2>📅 查詢單日 / 單月 / 單年</h2>
       <div class="filters">
         <input type="date" id="day-picker" />
@@ -203,7 +232,7 @@
         <input type="number" id="year-picker" placeholder="例如 2026" min="2020" max="2100" />
         <button onclick="loadYearData()">查詢單年</button>
 
-        <button onclick="exportExcel()">匯出 Excel</button>
+        <button onclick="exportExcel()">匯出當月 Excel</button>
       </div>
     </div>
 
@@ -335,6 +364,23 @@
       window.location.href = "/report-login.html";
     }
 
+    async function loadOverview() {
+      const res = await apiFetch("/report/overview");
+      const data = await res.json();
+
+      document.getElementById("today-total").innerText = money(data.today.total);
+      document.getElementById("today-sub").innerText = `${data.today.orderCount || 0} 筆 / ${data.today.pizzaCount || 0} 張 Pizza`;
+
+      document.getElementById("yesterday-total").innerText = money(data.yesterday.total);
+      document.getElementById("yesterday-sub").innerText = `${data.yesterday.orderCount || 0} 筆 / ${data.yesterday.pizzaCount || 0} 張 Pizza`;
+
+      document.getElementById("month-fixed-total").innerText = money(data.month.total);
+      document.getElementById("month-fixed-sub").innerText = `${data.month.orderCount || 0} 筆 / ${data.month.pizzaCount || 0} 張 Pizza`;
+
+      document.getElementById("all-total").innerText = money(data.all.total);
+      document.getElementById("all-sub").innerText = `${data.all.orderCount || 0} 筆 / ${data.all.pizzaCount || 0} 張 Pizza`;
+    }
+
     async function loadDayData() {
       const date = document.getElementById("day-picker").value;
       const res = await apiFetch(`/report/daily-summary?date=${encodeURIComponent(date)}`);
@@ -423,21 +469,40 @@
     }
 
     function exportExcel() {
-      const dateFrom = document.getElementById("date-from").value;
-      const dateTo = document.getElementById("date-to").value;
-      const keyword = document.getElementById("keyword").value.trim();
-      const statusFilter = document.getElementById("status-filter").value;
-      const month = document.getElementById("month-picker").value;
-
-      const params = new URLSearchParams();
-      if (month) params.append("month", month);
-      if (dateFrom) params.append("dateFrom", dateFrom);
-      if (dateTo) params.append("dateTo", dateTo);
-      if (keyword) params.append("keyword", keyword);
-      if (statusFilter) params.append("status", statusFilter);
-
-      window.open("/report/export?" + params.toString(), "_blank");
+      const month = document.getElementById("month-picker").value || "";
+      window.open("/report/export?month=" + encodeURIComponent(month) + "&token=" + encodeURIComponent(REPORT_TOKEN), "_blank");
     }
+
+    // 用隱藏表單送 token，避免 window.open 不能帶 header
+    const oldExport = exportExcel;
+    exportExcel = function () {
+      const month = document.getElementById("month-picker").value || "";
+      const form = document.createElement("form");
+      form.method = "GET";
+      form.action = "/report/export";
+      form.target = "_blank";
+
+      const monthInput = document.createElement("input");
+      monthInput.type = "hidden";
+      monthInput.name = "month";
+      monthInput.value = month;
+
+      const tokenInput = document.createElement("input");
+      tokenInput.type = "hidden";
+      tokenInput.name = "token";
+      tokenInput.value = REPORT_TOKEN;
+
+      form.appendChild(monthInput);
+      form.appendChild(tokenInput);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    };
+
+    // 讓 export 也接受 query token
+    (function patchTokenReminder() {
+      console.log("報表已載入");
+    })();
 
     function setDefaults() {
       const now = new Date();
@@ -450,6 +515,7 @@
     }
 
     setDefaults();
+    loadOverview();
     loadDayData();
     loadMonthData();
     loadYearData();
