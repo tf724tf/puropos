@@ -1,61 +1,32 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>報表</title>
-</head>
-
+<html>
 <body>
 
-<h2>📊 銷售報表</h2>
+<script>
+if(prompt("密碼")!=="7929"){
+  alert("錯誤");
+  location.reload();
+}
+</script>
 
+<h2>報表</h2>
 <div id="data"></div>
 
 <script>
 
-// 密碼驗證（每次進入都要輸入）
-const pass = prompt("請輸入密碼");
-if(pass !== "7929"){
-  alert("錯誤");
-  location.reload();
-}
-
 async function load(){
+  const res=await fetch("/orders");
+  const data=await res.json();
 
-  const res = await fetch("/orders");
-  const orders = await res.json();
+  let total=0;
 
-  const now = new Date();
-  const todayStart = new Date();
-  todayStart.setHours(0,0,0,0);
-
-  const monthStart = new Date(now.getFullYear(),now.getMonth(),1);
-
-  let today = 0;
-  let month = 0;
-  let year = 0;
-
-  orders.forEach(o=>{
+  data.forEach(o=>{
     if(o.status==="done"){
-
-      if(o.createdAt >= todayStart.getTime()){
-        today += o.price;
-      }
-
-      if(o.createdAt >= monthStart.getTime()){
-        month += o.price;
-      }
-
-      year += o.price;
+      total+=o.price;
     }
   });
 
-  document.getElementById("data").innerHTML = `
-    今日：$${today}<br>
-    本月：$${month}<br>
-    全部：$${year}
-  `;
+  document.getElementById("data").innerHTML="總營業額："+total;
 }
 
 load();
