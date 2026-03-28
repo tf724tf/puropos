@@ -27,6 +27,9 @@ async function initDb() {
       id TEXT PRIMARY KEY,
       items JSONB NOT NULL,
       price INTEGER NOT NULL DEFAULT 0,
+      order_type TEXT NOT NULL DEFAULT '內用',
+      paid_amount INTEGER NOT NULL DEFAULT 0,
+      change_amount INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'pending',
       created_at BIGINT NOT NULL,
       completed_at BIGINT,
@@ -52,6 +55,15 @@ async function initDb() {
   if (!cols.includes("delete_reason")) {
     await pool.query(`ALTER TABLE orders ADD COLUMN delete_reason TEXT`);
   }
+  if (!cols.includes("order_type")) {
+    await pool.query(`ALTER TABLE orders ADD COLUMN order_type TEXT NOT NULL DEFAULT '內用'`);
+  }
+  if (!cols.includes("paid_amount")) {
+    await pool.query(`ALTER TABLE orders ADD COLUMN paid_amount INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!cols.includes("change_amount")) {
+    await pool.query(`ALTER TABLE orders ADD COLUMN change_amount INTEGER NOT NULL DEFAULT 0`);
+  }
 }
 
 function mapOrder(row) {
@@ -59,6 +71,9 @@ function mapOrder(row) {
     id: row.id,
     items: row.items || [],
     price: Number(row.price || 0),
+    orderType: row.order_type || "內用",
+    paidAmount: Number(row.paid_amount || 0),
+    changeAmount: Number(row.change_amount || 0),
     status: row.status,
     createdAt: Number(row.created_at || 0),
     completedAt: row.completed_at ? Number(row.completed_at) : null,
@@ -218,6 +233,7 @@ function filterRowsByKeyword(rows, keyword) {
 
   return rows.filter((row) => {
     if ((row.id || "").includes(keyword)) return true;
+    if ((row.orderType || "").includes(keyword)) return true;
     return (row.items || []).some((item) =>
       (item.name || "").includes(keyword)
     );
@@ -251,12 +267,17 @@ async function summaryByRange(startMs, endMs, labelKey, labelValue) {
   const orderCount = rows.length;
   const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
   const pizzaCount = countPizzaFromOrders(rows);
+  const cashInDrawer = rows.reduce(
+    (sum, row) => sum + (Number(row.paidAmount || 0) - Number(row.changeAmount || 0)),
+    0
+  );
 
   return {
     [labelKey]: labelValue,
     orderCount,
     total,
-    pizzaCount
+    pizzaCount,
+    cashInDrawer
   };
 }
 
@@ -319,18 +340,22 @@ app.get("/menu.js", (req, res) => {
 // ===== 客人公開 API =====
 app.post("/order", async (req, res) => {
   try {
-    const { items, price } = req.body;
+    const { items, price, orderType } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "items 不可為空" });
     }
 
+    if (!orderType || !["內用", "外帶"].includes(orderType)) {
+      return res.status(400).json({ error: "請選擇內用或外帶" });
+    }
+
     const id = "A" + Date.now().toString().slice(-4);
 
     await pool.query(
-      `INSERT INTO orders (id, items, price, status, created_at)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [id, JSON.stringify(items), Number(price || 0), "pending", Date.now()]
+      `INSERT INTO orders (id, items, price, order_type, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id, JSON.stringify(items), Number(price || 0), orderType, "pending", Date.now()]
     );
 
     res.json({ id });
@@ -379,6 +404,26 @@ app.get("/order/:id", requireAdminToken, async (req, res) => {
 
 app.post("/pay/:id", requireAdminToken, async (req, res) => {
   try {
+    const { paidAmount } = req.body || {};
+
+    const orderResult = await pool.query(
+      `SELECT * FROM orders WHERE id = $1`,
+      [req.params.id]
+    );
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ error: "找不到訂單" });
+    }
+
+    const order = mapOrder(orderResult.rows[0]);
+    const paid = Number(paidAmount || 0);
+
+    if (Number.isNaN(paid) || paid < order.price) {
+      return res.status(400).json({ error: "收款金額不足" });
+    }
+
+    const changeAmount = paid - order.price;
+
     const countResult = await pool.query(
       `SELECT COUNT(*)::int AS count
        FROM orders
@@ -390,12 +435,14 @@ app.post("/pay/:id", requireAdminToken, async (req, res) => {
 
     await pool.query(
       `UPDATE orders
-       SET status = $1
-       WHERE id = $2`,
-      [nextStatus, req.params.id]
+       SET status = $1,
+           paid_amount = $2,
+           change_amount = $3
+       WHERE id = $4`,
+      [nextStatus, paid, changeAmount, req.params.id]
     );
 
-    res.json({ success: true });
+    res.json({ success: true, paidAmount: paid, changeAmount });
   } catch (err) {
     console.error("收款失敗:", err);
     res.status(500).json({ error: "收款失敗" });
@@ -436,24 +483,6 @@ app.post("/done/:id", requireAdminToken, async (req, res) => {
   }
 });
 
-app.post("/refund/:id", requireAdminToken, async (req, res) => {
-  try {
-    await pool.query(
-      `UPDATE orders
-       SET status = 'refunded',
-           delete_reason = $1,
-           deleted_at = $2
-       WHERE id = $3`,
-      ["退單", Date.now(), req.params.id]
-    );
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("退單失敗:", err);
-    res.status(500).json({ error: "退單失敗" });
-  }
-});
-
 app.post("/delete/:id", requireAdminToken, async (req, res) => {
   try {
     const { reason } = req.body || {};
@@ -480,10 +509,14 @@ app.post("/delete/:id", requireAdminToken, async (req, res) => {
 
 app.post("/update-order/:id", requireAdminToken, async (req, res) => {
   try {
-    const { items } = req.body || {};
+    const { items, orderType } = req.body || {};
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "items 不可為空" });
+    }
+
+    if (!orderType || !["內用", "外帶"].includes(orderType)) {
+      return res.status(400).json({ error: "請選擇內用或外帶" });
     }
 
     const totalPrice = items.reduce((sum, item) => {
@@ -493,10 +526,11 @@ app.post("/update-order/:id", requireAdminToken, async (req, res) => {
     await pool.query(
       `UPDATE orders
        SET items = $1,
-           price = $2
-       WHERE id = $3
+           price = $2,
+           order_type = $3
+       WHERE id = $4
          AND status = 'pending'`,
-      [JSON.stringify(items), totalPrice, req.params.id]
+      [JSON.stringify(items), totalPrice, orderType, req.params.id]
     );
 
     res.json({ success: true });
@@ -527,6 +561,10 @@ app.get("/report/overview", requireReportToken, async (req, res) => {
     const allTotal = allRows.reduce((sum, row) => sum + Number(row.price || 0), 0);
     const allCount = allRows.length;
     const allPizzaCount = countPizzaFromOrders(allRows);
+    const allCashInDrawer = allRows.reduce(
+      (sum, row) => sum + (Number(row.paidAmount || 0) - Number(row.changeAmount || 0)),
+      0
+    );
 
     res.json({
       today: todaySummary,
@@ -536,7 +574,8 @@ app.get("/report/overview", requireReportToken, async (req, res) => {
         label: "累計",
         total: allTotal,
         orderCount: allCount,
-        pizzaCount: allPizzaCount
+        pizzaCount: allPizzaCount,
+        cashInDrawer: allCashInDrawer
       }
     });
   } catch (err) {
@@ -584,7 +623,7 @@ app.get("/report/history", requireReportToken, async (req, res) => {
     const result = await pool.query(sql, params);
     let rows = result.rows.map(mapOrder);
     rows = filterRowsByKeyword(rows, keyword);
-    rows = rows.slice(0, 10); // 只顯示最新 10 筆
+    rows = rows.slice(0, 10);
     res.json(rows);
   } catch (err) {
     console.error("歷史訂單查詢失敗:", err);
@@ -663,7 +702,8 @@ app.get("/report/export", requireReportToken, async (req, res) => {
       月份: range.label,
       訂單數: rows.length,
       Pizza張數: countPizzaFromOrders(rows),
-      營業額: rows.reduce((sum, row) => sum + Number(row.price || 0), 0)
+      營業額: rows.reduce((sum, row) => sum + Number(row.price || 0), 0),
+      錢櫃應有金額: rows.reduce((sum, row) => sum + (Number(row.paidAmount || 0) - Number(row.changeAmount || 0)), 0)
     }];
 
     const dailyMap = {};
@@ -671,10 +711,11 @@ app.get("/report/export", requireReportToken, async (req, res) => {
       const d = new Date(order.createdAt);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       if (!dailyMap[key]) {
-        dailyMap[key] = { 日期: key, 訂單數: 0, Pizza張數: 0, 營業額: 0 };
+        dailyMap[key] = { 日期: key, 訂單數: 0, Pizza張數: 0, 營業額: 0, 錢櫃應有金額: 0 };
       }
       dailyMap[key].訂單數 += 1;
       dailyMap[key].營業額 += Number(order.price || 0);
+      dailyMap[key].錢櫃應有金額 += Number(order.paidAmount || 0) - Number(order.changeAmount || 0);
 
       (order.items || []).forEach(item => {
         if (item.size === "方形" || item.size === "圓形") {
@@ -709,12 +750,16 @@ app.get("/report/export", requireReportToken, async (req, res) => {
       (order.items || []).forEach(item => {
         detailRows.push({
           單號: order.id,
+          類型: order.orderType,
           建立時間: new Date(order.createdAt).toLocaleString("zh-TW"),
           完成時間: order.completedAt ? new Date(order.completedAt).toLocaleString("zh-TW") : "",
           品項: item.name,
           尺寸: item.size,
           品項金額: item.price,
-          訂單總額: order.price
+          訂單總額: order.price,
+          收款金額: order.paidAmount,
+          找零金額: order.changeAmount,
+          淨收入: Number(order.paidAmount || 0) - Number(order.changeAmount || 0)
         });
       });
     });
@@ -747,10 +792,6 @@ initDb()
       console.log("POS running on port " + PORT);
     });
   })
-  .catch((err) => {
-    console.error("DB init failed:", err);
-    process.exit(1);
-  });
   .catch((err) => {
     console.error("DB init failed:", err);
     process.exit(1);
