@@ -88,13 +88,6 @@
       line-height: 1.6;
     }
 
-    .cash-text {
-      margin-top: 10px;
-      font-size: 16px;
-      font-weight: 800;
-      color: #c95a00;
-    }
-
     .section {
       background: white;
       border-radius: 16px;
@@ -181,14 +174,24 @@
       color: #0f7a0f;
     }
 
-    .status-refunded {
-      background: #fff3d9;
-      color: #9a6700;
-    }
-
     .status-deleted {
       background: #fde7e7;
       color: #b42318;
+    }
+
+    .status-pending {
+      background: #fff7ed;
+      color: #9a3412;
+    }
+
+    .status-making {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .status-waiting {
+      background: #faf5ff;
+      color: #7e22ce;
     }
 
     .reason {
@@ -225,7 +228,6 @@
           <div class="card-title">今日營業額</div>
           <div class="card-value" id="today-total">$0</div>
           <div id="today-sub" class="card-sub">0 筆 / 0 張 Pizza</div>
-          <div id="today-cash" class="cash-text">錢櫃應有：$0</div>
         </div>
 
         <div class="card">
@@ -310,7 +312,6 @@
         <select id="status-filter">
           <option value="">全部狀態</option>
           <option value="done">完成</option>
-          <option value="refunded">退單</option>
           <option value="deleted">刪單</option>
           <option value="pending">未收款</option>
           <option value="making">製作中</option>
@@ -336,24 +337,17 @@
 
   <script>
     const REPORT_TOKEN = sessionStorage.getItem("report_auth_token");
-
-    if (!REPORT_TOKEN) {
-      window.location.href = "/report-login.html";
-    }
+    if (!REPORT_TOKEN) window.location.href = "/report-login.html";
 
     async function apiFetch(url) {
       const res = await fetch(url, {
-        headers: {
-          "x-report-token": REPORT_TOKEN
-        }
+        headers: { "x-report-token": REPORT_TOKEN }
       });
-
       if (res.status === 401) {
         sessionStorage.removeItem("report_auth_token");
         window.location.href = "/report-login.html";
         throw new Error("未授權");
       }
-
       return res;
     }
 
@@ -370,11 +364,10 @@
     function statusHtml(row) {
       const map = {
         done: ["完成", "status-done"],
-        refunded: ["退單", "status-refunded"],
         deleted: ["刪單", "status-deleted"],
-        pending: ["未收款", ""],
-        making: ["製作中", ""],
-        waiting: ["排隊中", ""]
+        pending: ["未收款", "status-pending"],
+        making: ["製作中", "status-making"],
+        waiting: ["排隊中", "status-waiting"]
       };
 
       const config = map[row.status] || [row.status, ""];
@@ -398,7 +391,6 @@
 
       document.getElementById("today-total").innerText = money(data.today.total);
       document.getElementById("today-sub").innerText = `${data.today.orderCount || 0} 筆 / ${data.today.pizzaCount || 0} 張 Pizza`;
-      document.getElementById("today-cash").innerText = `錢櫃應有：${money(data.today.cashInDrawer || 0)}`;
 
       document.getElementById("yesterday-total").innerText = money(data.yesterday.total);
       document.getElementById("yesterday-sub").innerText = `${data.yesterday.orderCount || 0} 筆 / ${data.yesterday.pizzaCount || 0} 張 Pizza`;
@@ -465,7 +457,6 @@
       const month = document.getElementById("month-picker").value;
 
       const params = new URLSearchParams();
-
       if (month) params.append("month", month);
       if (dateFrom) params.append("dateFrom", dateFrom);
       if (dateTo) params.append("dateTo", dateTo);
@@ -474,7 +465,6 @@
 
       const res = await apiFetch("/report/history?" + params.toString());
       const rows = await res.json();
-
       const body = document.getElementById("history-body");
 
       if (!rows.length) {
