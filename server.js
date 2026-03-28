@@ -65,6 +65,34 @@ function mapOrder(row) {
   };
 }
 
+function getTodayRange() {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  return {
+    startMs: start.getTime(),
+    endMs: end.getTime(),
+    label: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`
+  };
+}
+
+function getYesterdayRange() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  d.setHours(0, 0, 0, 0);
+
+  const start = new Date(d);
+  const end = new Date(d);
+  end.setHours(23, 59, 59, 999);
+
+  return {
+    startMs: start.getTime(),
+    endMs: end.getTime(),
+    label: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`
+  };
+}
+
 function getMonthRange(monthString) {
   let year;
   let month;
@@ -194,10 +222,46 @@ function filterRowsByKeyword(rows, keyword) {
   });
 }
 
-// ====== 報表登入：用 tab token，不用 cookie ======
+function requireReportToken(req, res, next) {
+  const token = req.headers["x-report-token"];
+  if (token === "7929-ok") return next();
+  return res.status(401).json({ error: "未授權，請先登入報表系統" });
+}
+
+async function summaryByRange(startMs, endMs, labelKey, labelValue) {
+  const result = await pool.query(
+    `SELECT *
+     FROM orders
+     WHERE status = 'done'
+       AND created_at >= $1
+       AND created_at <= $2
+     ORDER BY created_at DESC`,
+    [startMs, endMs]
+  );
+
+  const rows = result.rows.map(mapOrder);
+  const orderCount = rows.length;
+  const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
+  const pizzaCount = countPizzaFromOrders(rows);
+
+  return {
+    [labelKey]: labelValue,
+    orderCount,
+    total,
+    pizzaCount
+  };
+}
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.html"));
+});
 
 app.get("/report-login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "report-login.html"));
+});
+
+app.get("/report.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "report.html"));
 });
 
 app.post("/report-login", (req, res) => {
@@ -207,34 +271,11 @@ app.post("/report-login", (req, res) => {
     return res.status(401).json({ error: "密碼錯誤" });
   }
 
-  // 簡化版：固定 token，給前端存 sessionStorage
   res.json({
     success: true,
     token: "7929-ok"
   });
 });
-
-function requireReportToken(req, res, next) {
-  const token = req.headers["x-report-token"];
-
-  if (token === "7929-ok") {
-    return next();
-  }
-
-  return res.status(401).json({ error: "未授權，請先登入報表系統" });
-}
-
-// ====== 一般頁面 ======
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "admin.html"));
-});
-
-app.get("/report.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "report.html"));
-});
-
-// ====== POS API ======
 
 app.post("/order", async (req, res) => {
   try {
@@ -424,33 +465,50 @@ app.post("/update-order/:id", async (req, res) => {
   }
 });
 
-// ====== 報表 API：全部加密碼保護 ======
+// 報表固定摘要
+app.get("/report/overview", requireReportToken, async (req, res) => {
+  try {
+    const today = getTodayRange();
+    const yesterday = getYesterdayRange();
+    const month = getMonthRange();
+    const all = await pool.query(
+      `SELECT *
+       FROM orders
+       WHERE status = 'done'
+       ORDER BY created_at DESC`
+    );
+    const allRows = all.rows.map(mapOrder);
+
+    const todaySummary = await summaryByRange(today.startMs, today.endMs, "label", today.label);
+    const yesterdaySummary = await summaryByRange(yesterday.startMs, yesterday.endMs, "label", yesterday.label);
+    const monthSummary = await summaryByRange(month.startMs, month.endMs, "label", month.label);
+
+    const allTotal = allRows.reduce((sum, row) => sum + Number(row.price || 0), 0);
+    const allCount = allRows.length;
+    const allPizzaCount = countPizzaFromOrders(allRows);
+
+    res.json({
+      today: todaySummary,
+      yesterday: yesterdaySummary,
+      month: monthSummary,
+      all: {
+        label: "累計",
+        total: allTotal,
+        orderCount: allCount,
+        pizzaCount: allPizzaCount
+      }
+    });
+  } catch (err) {
+    console.error("累計摘要失敗:", err);
+    res.status(500).json({ error: "累計摘要失敗" });
+  }
+});
 
 app.get("/report/daily-summary", requireReportToken, async (req, res) => {
   try {
     const range = getDateRange(req.query.date);
-
-    const result = await pool.query(
-      `SELECT *
-       FROM orders
-       WHERE status = 'done'
-         AND created_at >= $1
-         AND created_at <= $2
-       ORDER BY created_at DESC`,
-      [range.startMs, range.endMs]
-    );
-
-    const rows = result.rows.map(mapOrder);
-    const orderCount = rows.length;
-    const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
-    const pizzaCount = countPizzaFromOrders(rows);
-
-    res.json({
-      date: range.label,
-      orderCount,
-      total,
-      pizzaCount
-    });
+    const data = await summaryByRange(range.startMs, range.endMs, "date", range.label);
+    res.json(data);
   } catch (err) {
     console.error("單日摘要失敗:", err);
     res.status(500).json({ error: "單日摘要失敗" });
@@ -460,28 +518,8 @@ app.get("/report/daily-summary", requireReportToken, async (req, res) => {
 app.get("/report/monthly-summary", requireReportToken, async (req, res) => {
   try {
     const range = getMonthRange(req.query.month);
-
-    const result = await pool.query(
-      `SELECT *
-       FROM orders
-       WHERE status = 'done'
-         AND created_at >= $1
-         AND created_at <= $2
-       ORDER BY created_at DESC`,
-      [range.startMs, range.endMs]
-    );
-
-    const rows = result.rows.map(mapOrder);
-    const orderCount = rows.length;
-    const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
-    const pizzaCount = countPizzaFromOrders(rows);
-
-    res.json({
-      month: range.label,
-      orderCount,
-      total,
-      pizzaCount
-    });
+    const data = await summaryByRange(range.startMs, range.endMs, "month", range.label);
+    res.json(data);
   } catch (err) {
     console.error("月份摘要失敗:", err);
     res.status(500).json({ error: "月份摘要失敗" });
@@ -491,28 +529,8 @@ app.get("/report/monthly-summary", requireReportToken, async (req, res) => {
 app.get("/report/yearly-summary", requireReportToken, async (req, res) => {
   try {
     const range = getYearRange(req.query.year);
-
-    const result = await pool.query(
-      `SELECT *
-       FROM orders
-       WHERE status = 'done'
-         AND created_at >= $1
-         AND created_at <= $2
-       ORDER BY created_at DESC`,
-      [range.startMs, range.endMs]
-    );
-
-    const rows = result.rows.map(mapOrder);
-    const orderCount = rows.length;
-    const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
-    const pizzaCount = countPizzaFromOrders(rows);
-
-    res.json({
-      year: range.label,
-      orderCount,
-      total,
-      pizzaCount
-    });
+    const data = await summaryByRange(range.startMs, range.endMs, "year", range.label);
+    res.json(data);
   } catch (err) {
     console.error("年度摘要失敗:", err);
     res.status(500).json({ error: "年度摘要失敗" });
@@ -582,66 +600,97 @@ app.get("/report/items", requireReportToken, async (req, res) => {
   }
 });
 
+// 當月 Excel 匯出：摘要 + 每日統計 + 熱銷 + 明細
 app.get("/report/export", requireReportToken, async (req, res) => {
   try {
-    const { sql, params, keyword } = buildHistoryFilter(req.query);
-    const result = await pool.query(sql, params);
-    let rows = result.rows.map(mapOrder);
-    rows = filterRowsByKeyword(rows, keyword);
+    const month = req.query.month;
+    const range = getMonthRange(month);
 
-    const exportRows = [];
+    const result = await pool.query(
+      `SELECT *
+       FROM orders
+       WHERE status = 'done'
+         AND created_at >= $1
+         AND created_at <= $2
+       ORDER BY created_at DESC`,
+      [range.startMs, range.endMs]
+    );
 
+    const rows = result.rows.map(mapOrder);
+
+    const summaryRows = [{
+      月份: range.label,
+      訂單數: rows.length,
+      Pizza張數: countPizzaFromOrders(rows),
+      營業額: rows.reduce((sum, row) => sum + Number(row.price || 0), 0)
+    }];
+
+    const dailyMap = {};
     rows.forEach(order => {
-      if ((order.items || []).length === 0) {
-        exportRows.push({
-          單號: order.id,
-          狀態: order.status,
-          建立時間: new Date(order.createdAt).toLocaleString("zh-TW"),
-          完成時間: order.completedAt ? new Date(order.completedAt).toLocaleString("zh-TW") : "",
-          品項: "",
-          尺寸: "",
-          品項金額: "",
-          訂單總額: order.price,
-          刪除原因: order.deleteReason || ""
-        });
-      } else {
-        order.items.forEach(item => {
-          exportRows.push({
-            單號: order.id,
-            狀態: order.status,
-            建立時間: new Date(order.createdAt).toLocaleString("zh-TW"),
-            完成時間: order.completedAt ? new Date(order.completedAt).toLocaleString("zh-TW") : "",
+      const d = new Date(order.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (!dailyMap[key]) {
+        dailyMap[key] = { 日期: key, 訂單數: 0, Pizza張數: 0, 營業額: 0 };
+      }
+      dailyMap[key].訂單數 += 1;
+      dailyMap[key].營業額 += Number(order.price || 0);
+
+      (order.items || []).forEach(item => {
+        if (item.size === "方形" || item.size === "圓形") {
+          dailyMap[key].Pizza張數 += 1;
+        }
+      });
+    });
+
+    const dailyRows = Object.values(dailyMap).sort((a, b) => a.日期.localeCompare(b.日期));
+
+    const itemMap = {};
+    rows.forEach(order => {
+      (order.items || []).forEach(item => {
+        const key = `${item.name}｜${item.size}`;
+        if (!itemMap[key]) {
+          itemMap[key] = {
             品項: item.name,
             尺寸: item.size,
-            品項金額: item.price,
-            訂單總額: order.price,
-            刪除原因: order.deleteReason || ""
-          });
+            銷售數量: 0,
+            銷售額: 0
+          };
+        }
+        itemMap[key].銷售數量 += 1;
+        itemMap[key].銷售額 += Number(item.price || 0);
+      });
+    });
+
+    const itemRows = Object.values(itemMap).sort((a, b) => b.銷售數量 - a.銷售數量);
+
+    const detailRows = [];
+    rows.forEach(order => {
+      (order.items || []).forEach(item => {
+        detailRows.push({
+          單號: order.id,
+          建立時間: new Date(order.createdAt).toLocaleString("zh-TW"),
+          完成時間: order.completedAt ? new Date(order.completedAt).toLocaleString("zh-TW") : "",
+          品項: item.name,
+          尺寸: item.size,
+          品項金額: item.price,
+          訂單總額: order.price
         });
-      }
+      });
     });
 
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(exportRows);
-    XLSX.utils.book_append_sheet(wb, ws, "SalesReport");
 
-    const fileBuffer = XLSX.write(wb, {
-      type: "buffer",
-      bookType: "xlsx"
-    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), "月摘要");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dailyRows), "每日營業");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(itemRows), "熱銷排行");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows), "訂單明細");
 
-    const filename = `puro-report-${Date.now()}.xlsx`;
+    const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const filename = `puro-month-report-${range.label}.xlsx`;
 
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${filename}"`
-    );
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    );
-
-    res.send(fileBuffer);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(buffer);
   } catch (err) {
     console.error("匯出報表失敗:", err);
     res.status(500).json({ error: "匯出報表失敗" });
