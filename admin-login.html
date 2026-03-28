@@ -1,102 +1,22 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>POS 後台登入</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: #f5f5f5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-
-    .card {
-      width: min(420px, 90vw);
-      background: white;
-      padding: 24px;
-      border-radius: 18px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-    }
-
-    h1 {
-      margin: 0 0 12px;
-      font-size: 28px;
-    }
-
-    p {
-      color: #666;
-      margin-bottom: 18px;
-    }
-
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 14px;
-      font-size: 18px;
-      border: 1px solid #ccc;
-      border-radius: 12px;
-      margin-bottom: 14px;
-    }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      font-size: 20px;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      background: black;
-      color: white;
-      cursor: pointer;
-    }
-
-    .error {
-      color: #c00;
-      margin-top: 12px;
-      min-height: 24px;
-    }
-  </style>
-</head>
+<html>
 <body>
-  <div class="card">
-    <h1>🔐 POS 後台登入</h1>
-    <p>請輸入密碼才能進入後台</p>
 
-    <input id="password" type="password" placeholder="請輸入密碼" />
-    <button onclick="login()">登入</button>
+<h2>後台登入</h2>
 
-    <div class="error" id="error"></div>
-  </div>
+<input id="pwd" type="password" placeholder="輸入密碼">
+<button onclick="login()">登入</button>
 
-  <script>
-    async function login() {
-      const password = document.getElementById("password").value;
-      const error = document.getElementById("error");
-      error.innerText = "";
+<script>
+function login(){
+  if(document.getElementById("pwd").value==="0101"){
+    sessionStorage.setItem("admin_auth_token","ok");
+    location.href="/admin.html";
+  }else{
+    alert("錯誤");
+  }
+}
+</script>
 
-      const res = await fetch("/admin-login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ password })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        error.innerText = data.error || "登入失敗";
-        return;
-      }
-
-      sessionStorage.setItem("admin_auth_token", data.token);
-      window.location.href = "/admin.html";
-    }
-  </script>
 </body>
 </html>
