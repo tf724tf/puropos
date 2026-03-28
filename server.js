@@ -246,12 +246,6 @@ function requireReportToken(req, res, next) {
   return res.status(401).json({ error: "未授權，請先登入報表系統" });
 }
 
-function requireAdminToken(req, res, next) {
-  const token = req.headers["x-admin-token"] || req.query.token;
-  if (token === ADMIN_TOKEN) return next();
-  return res.status(401).json({ error: "未授權，請先登入後台" });
-}
-
 async function summaryByRange(startMs, endMs, labelKey, labelValue) {
   const result = await pool.query(
     `SELECT *
@@ -546,6 +540,7 @@ app.get("/report/overview", requireReportToken, async (req, res) => {
     const today = getTodayRange();
     const yesterday = getYesterdayRange();
     const month = getMonthRange();
+
     const all = await pool.query(
       `SELECT *
        FROM orders
@@ -561,21 +556,26 @@ app.get("/report/overview", requireReportToken, async (req, res) => {
     const allTotal = allRows.reduce((sum, row) => sum + Number(row.price || 0), 0);
     const allCount = allRows.length;
     const allPizzaCount = countPizzaFromOrders(allRows);
-    const allCashInDrawer = allRows.reduce(
-      (sum, row) => sum + (Number(row.paidAmount || 0) - Number(row.changeAmount || 0)),
-      0
-    );
 
     res.json({
-      today: todaySummary,
-      yesterday: yesterdaySummary,
-      month: monthSummary,
+      today: {
+        ...todaySummary,
+        cashInDrawer: todaySummary.cashInDrawer
+      },
+      yesterday: {
+        ...yesterdaySummary,
+        cashInDrawer: 0
+      },
+      month: {
+        ...monthSummary,
+        cashInDrawer: 0
+      },
       all: {
         label: "累計",
         total: allTotal,
         orderCount: allCount,
         pizzaCount: allPizzaCount,
-        cashInDrawer: allCashInDrawer
+        cashInDrawer: 0
       }
     });
   } catch (err) {
@@ -583,7 +583,6 @@ app.get("/report/overview", requireReportToken, async (req, res) => {
     res.status(500).json({ error: "累計摘要失敗" });
   }
 });
-
 app.get("/report/daily-summary", requireReportToken, async (req, res) => {
   try {
     const range = getDateRange(req.query.date);
