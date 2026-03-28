@@ -1,271 +1,54 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PURO Pizza 點餐</title>
-
-<style>
-body {
-  font-family: sans-serif;
-  margin: 0;
-  background: #f4f4f4;
-}
-
-/* 上方 */
-.header {
-  text-align: center;
-  padding: 20px;
-}
-
-.type-select {
-  display: flex;
-  gap: 10px;
-  margin: 10px;
-}
-
-.type-btn {
-  flex: 1;
-  padding: 12px;
-  border-radius: 10px;
-  border: 2px solid #ccc;
-  background: white;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.type-btn.active {
-  border-color: black;
-}
-
-/* 分類 */
-.tabs {
-  display: flex;
-  margin: 10px;
-}
-
-.tab {
-  flex: 1;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  text-align: center;
-  background: white;
-}
-
-.tab.active {
-  background: black;
-  color: white;
-}
-
-/* 菜單 */
-.menu-item {
-  background: white;
-  margin: 10px;
-  padding: 12px;
-  border-radius: 12px;
-}
-
-.menu-title {
-  font-weight: bold;
-  font-size: 18px;
-}
-
-.menu-desc {
-  color: gray;
-  font-size: 14px;
-}
-
-/* Pizza 尺寸 */
-.pizza-size-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.size-card {
-  background: white;
-  border: 2px solid #ddd;
-  border-radius: 12px;
-  padding: 10px;
-  text-align: center;
-}
-
-.size-title {
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.size-sub {
-  font-size: 12px;
-  color: gray;
-}
-
-.size-price {
-  color: #d35400;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-/* 購物車 */
-.cart {
-  background: white;
-  margin: 10px;
-  padding: 12px;
-  border-radius: 12px;
-}
-
-.checkout {
-  width: 100%;
-  padding: 14px;
-  font-size: 18px;
-  background: black;
-  color: white;
-  border: none;
-  border-radius: 10px;
-}
-</style>
-</head>
-
+<html>
 <body>
 
-<div class="header">
-  <h2>🍕 PURO Pizza</h2>
-</div>
+<h2>點餐</h2>
 
-<!-- 內用外帶 -->
-<div class="type-select">
-  <button class="type-btn" onclick="setType('內用')" id="dine">內用</button>
-  <button class="type-btn" onclick="setType('外帶')" id="take">外帶</button>
-</div>
+<button onclick="type='內用'">內用</button>
+<button onclick="type='外帶'">外帶</button>
 
-<!-- 分類 -->
-<div class="tabs">
-  <div class="tab active" onclick="setTab('pizza')">Pizza</div>
-  <div class="tab" onclick="setTab('drink')">飲料</div>
-</div>
+<h3>Pizza</h3>
 
-<div id="menu"></div>
+<button onclick="add('瑪格莉特','方形',190)">方形 190</button>
+<button onclick="add('瑪格莉特','圓形',270)">圓形 270</button>
 
-<div class="cart">
-  <h3>購物車</h3>
-  <div id="cartList">尚未加入</div>
-  <h2 id="total">$0</h2>
-  <button class="checkout" onclick="submitOrder()">送出訂單</button>
-</div>
+<h3>購物車</h3>
+<div id="cart"></div>
+<button onclick="submit()">送出</button>
 
 <script>
 
-let orderType = null;
-let currentTab = "pizza";
-let cart = [];
+let cart=[];
+let type=null;
 
-const MENU = {
-  pizzas: [
-    {name:"瑪格莉特披薩",desc:"茄汁|羅勒|起司",square:190,round:270},
-    {name:"佛羅提納披薩",desc:"菠菜|蛋|培根",square:220,round:290},
-  ],
-  drinks: [
-    {name:"可樂",price:30},
-    {name:"雪碧",price:30}
-  ]
-};
-
-function setType(type){
-  orderType = type;
-  document.getElementById("dine").classList.remove("active");
-  document.getElementById("take").classList.remove("active");
-
-  if(type==="內用") document.getElementById("dine").classList.add("active");
-  if(type==="外帶") document.getElementById("take").classList.add("active");
-}
-
-function setTab(tab){
-  currentTab = tab;
-  renderMenu();
-}
-
-function addItem(name,size,price){
+function add(name,size,price){
   cart.push({name,size,price});
-  renderCart();
+  render();
 }
 
-function renderCart(){
-  let html="";
-  let total=0;
-
-  cart.forEach(i=>{
-    html+=`${i.name} ${i.size} $${i.price}<br>`;
-    total+=i.price;
-  });
-
-  document.getElementById("cartList").innerHTML = html || "尚未加入";
-  document.getElementById("total").innerText = "$"+total;
+function render(){
+  document.getElementById("cart").innerHTML=
+    cart.map(i=>i.name+" "+i.size+" $"+i.price).join("<br>");
 }
 
-function renderMenu(){
-  const list = document.getElementById("menu");
+async function submit(){
 
-  if(currentTab==="pizza"){
-    list.innerHTML = MENU.pizzas.map(item=>`
-      <div class="menu-item">
-        <div class="menu-title">${item.name}</div>
-        <div class="menu-desc">${item.desc}</div>
-
-        <div class="pizza-size-grid">
-          <div class="size-card" onclick="addItem('${item.name}','方形',${item.square})">
-            <div class="size-title">方形</div>
-            <div class="size-sub">15×24CM</div>
-            <div class="size-price">$${item.square}</div>
-          </div>
-
-          <div class="size-card" onclick="addItem('${item.name}','圓形',${item.round})">
-            <div class="size-title">圓形</div>
-            <div class="size-sub">9吋</div>
-            <div class="size-price">$${item.round}</div>
-          </div>
-        </div>
-      </div>
-    `).join("");
-  }
-
-  if(currentTab==="drink"){
-    list.innerHTML = MENU.drinks.map(d=>`
-      <div class="menu-item" onclick="addItem('${d.name}','單品',${d.price})">
-        ${d.name} - $${d.price}
-      </div>
-    `).join("");
-  }
-}
-
-async function submitOrder(){
-
-  if(!orderType){
-    alert("請先選內用或外帶");
-    return;
-  }
+  if(!type) return alert("選內用外帶");
 
   const total = cart.reduce((s,i)=>s+i.price,0);
 
   const res = await fetch("/order",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      items:cart,
-      price:total,
-      type:orderType
-    })
+    body:JSON.stringify({items:cart,price:total,type})
   });
 
-  const data = await res.json();
-  alert("取餐號碼："+data.id);
+  const d=await res.json();
+  alert("號碼:"+d.id);
 
   cart=[];
-  renderCart();
+  render();
 }
-
-renderMenu();
 
 </script>
 
