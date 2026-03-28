@@ -56,6 +56,13 @@
       margin-bottom: 24px;
     }
 
+    .mini-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
     .card {
       background: white;
       border-radius: 16px;
@@ -78,6 +85,14 @@
       margin-top: 8px;
       color: #666;
       font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .cash-text {
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #c95a00;
     }
 
     .section {
@@ -150,6 +165,17 @@
       margin-bottom: 6px;
     }
 
+    .type-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-right: 6px;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
     .status-done {
       background: #e8f7e8;
       color: #0f7a0f;
@@ -176,7 +202,8 @@
     }
 
     @media (max-width: 900px) {
-      .cards {
+      .cards,
+      .mini-cards {
         grid-template-columns: 1fr;
       }
     }
@@ -198,6 +225,7 @@
           <div class="card-title">今日營業額</div>
           <div class="card-value" id="today-total">$0</div>
           <div id="today-sub" class="card-sub">0 筆 / 0 張 Pizza</div>
+          <div id="today-cash" class="cash-text">錢櫃應有：$0</div>
         </div>
 
         <div class="card">
@@ -236,7 +264,7 @@
       </div>
     </div>
 
-    <div class="cards">
+    <div class="mini-cards">
       <div class="card">
         <div class="card-title">單日查詢結果</div>
         <div class="card-value" id="day-total">$0</div>
@@ -273,7 +301,7 @@
     </div>
 
     <div class="section">
-      <h2>🧾 歷史交易列表（預設當月）</h2>
+      <h2>🧾 歷史交易列表（最新 10 筆）</h2>
 
       <div class="filters">
         <input type="date" id="date-from" />
@@ -296,7 +324,7 @@
           <tr>
             <th>單號</th>
             <th>時間</th>
-            <th>內容</th>
+            <th>類型 / 內容</th>
             <th>金額</th>
             <th>狀態 / 原因</th>
           </tr>
@@ -370,6 +398,7 @@
 
       document.getElementById("today-total").innerText = money(data.today.total);
       document.getElementById("today-sub").innerText = `${data.today.orderCount || 0} 筆 / ${data.today.pizzaCount || 0} 張 Pizza`;
+      document.getElementById("today-cash").innerText = `錢櫃應有：${money(data.today.cashInDrawer || 0)}`;
 
       document.getElementById("yesterday-total").innerText = money(data.yesterday.total);
       document.getElementById("yesterday-sub").innerText = `${data.yesterday.orderCount || 0} 筆 / ${data.yesterday.pizzaCount || 0} 張 Pizza`;
@@ -458,6 +487,7 @@
           <td>${row.id}</td>
           <td>${formatTime(row.createdAt)}</td>
           <td>
+            <div class="type-tag">${row.orderType || "內用"}</div>
             ${(row.items || []).map(item => `
               <div class="item-line">- ${item.name}｜${item.size}｜${money(item.price)}</div>
             `).join("")}
@@ -469,13 +499,6 @@
     }
 
     function exportExcel() {
-      const month = document.getElementById("month-picker").value || "";
-      window.open("/report/export?month=" + encodeURIComponent(month) + "&token=" + encodeURIComponent(REPORT_TOKEN), "_blank");
-    }
-
-    // 用隱藏表單送 token，避免 window.open 不能帶 header
-    const oldExport = exportExcel;
-    exportExcel = function () {
       const month = document.getElementById("month-picker").value || "";
       const form = document.createElement("form");
       form.method = "GET";
@@ -497,12 +520,7 @@
       document.body.appendChild(form);
       form.submit();
       document.body.removeChild(form);
-    };
-
-    // 讓 export 也接受 query token
-    (function patchTokenReminder() {
-      console.log("報表已載入");
-    })();
+    }
 
     function setDefaults() {
       const now = new Date();
