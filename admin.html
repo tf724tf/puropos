@@ -19,8 +19,8 @@ h1{margin:0 0 10px;}
 .price{color:#c95a00;font-weight:bold;font-size:28px;margin:10px 0;}
 .action-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;}
 .pay-btn,.done-btn,.delete-btn,.edit-btn{
-  border:none;border-radius:14px;cursor:pointer;min-width:180px;
-  padding:18px 24px;font-size:26px;font-weight:800;
+  border:none;border-radius:14px;cursor:pointer;min-width:150px;
+  padding:16px 20px;font-size:22px;font-weight:800;
 }
 .pay-btn{background:#1f9d55;color:white;}
 .done-btn{background:#2563eb;color:white;}
@@ -104,9 +104,9 @@ h1{margin:0 0 10px;}
   border-radius:14px;
   background:#111;
   color:white;
-  font-size:28px;
+  font-size:24px;
   font-weight:900;
-  padding:20px 0;
+  padding:18px 0;
   cursor:pointer;
 }
 .keypad .wide{
@@ -190,21 +190,21 @@ h1{margin:0 0 10px;}
       <div class="calc-result">找零：<span id="pay-change-result">$0</span></div>
 
       <div class="keypad">
-        <button onclick="pressKey('1')">1</button>
-        <button onclick="pressKey('2')">2</button>
-        <button onclick="pressKey('3')">3</button>
-        <button onclick="pressKey('4')">4</button>
-        <button onclick="pressKey('5')">5</button>
-        <button onclick="pressKey('6')">6</button>
-        <button onclick="pressKey('7')">7</button>
-        <button onclick="pressKey('8')">8</button>
-        <button onclick="pressKey('9')">9</button>
-        <button class="clear" onclick="clearKeypad()">清除</button>
-        <button onclick="pressKey('0')">0</button>
-        <button onclick="backspaceKey()">←</button>
-        <button class="wide" onclick="setQuickAmount(100)">100</button>
-        <button onclick="setQuickAmount(500)">500</button>
-        <button onclick="setQuickAmount(1000)">1000</button>
+        <button type="button" onclick="pressKey('1')">1</button>
+        <button type="button" onclick="pressKey('2')">2</button>
+        <button type="button" onclick="pressKey('3')">3</button>
+        <button type="button" onclick="pressKey('4')">4</button>
+        <button type="button" onclick="pressKey('5')">5</button>
+        <button type="button" onclick="pressKey('6')">6</button>
+        <button type="button" onclick="pressKey('7')">7</button>
+        <button type="button" onclick="pressKey('8')">8</button>
+        <button type="button" onclick="pressKey('9')">9</button>
+        <button type="button" class="clear" onclick="clearKeypad()">清除</button>
+        <button type="button" onclick="pressKey('0')">0</button>
+        <button type="button" onclick="backspaceKey()">←</button>
+        <button type="button" class="wide" onclick="setQuickAmount(100)">100</button>
+        <button type="button" onclick="setQuickAmount(500)">500</button>
+        <button type="button" onclick="setQuickAmount(1000)">1000</button>
       </div>
 
       <div class="editor-actions" style="margin-top:16px;">
@@ -218,7 +218,9 @@ h1{margin:0 0 10px;}
 <script src="/menu.js"></script>
 <script>
 const ADMIN_TOKEN = sessionStorage.getItem("admin_auth_token");
-if (!ADMIN_TOKEN) window.location.href = "/admin-login.html";
+if (!ADMIN_TOKEN) {
+  window.location.href = "/admin-login.html";
+}
 
 const MENU = window.PURO_MENU;
 let currentEditingId = null;
@@ -290,8 +292,14 @@ function getTodayStart() {
 function calcTodayCash(orders) {
   const todayStart = getTodayStart();
   return orders
-    .filter(o => (o.status === "making" || o.status === "waiting" || o.status === "done") && (o.createdAt || 0) >= todayStart)
-    .reduce((sum, o) => sum + (Number(o.paidAmount || 0) - Number(o.changeAmount || 0)), 0);
+    .filter(o =>
+      Number(o.paidAmount || 0) > 0 &&
+      (o.status === "making" || o.status === "waiting" || o.status === "done") &&
+      ((o.createdAt || 0) >= todayStart || (o.completedAt || 0) >= todayStart)
+    )
+    .reduce((sum, o) => {
+      return sum + (Number(o.paidAmount || 0) - Number(o.changeAmount || 0));
+    }, 0);
 }
 
 async function loadOrders(showMessage = false){
@@ -591,26 +599,3 @@ setInterval(loadOrders, 2000);
 
 </body>
 </html>
-'''
-# write files
-for name, content in {
-    "server.js": server_js,
-    "admin-login.html": admin_login_html,
-    "report-login.html": report_login_html,
-    "menu.js": menu_js,
-    "order.html": order_html,
-    "admin.html": admin_html,
-    "report.html": report_html,
-}.items():
-    (base / name).write_text(content, encoding="utf-8")
-
-with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-    for p in base.iterdir():
-        zf.write(p, arcname=p.name)
-
-print("updated zip")
-print(zip_path)
-print("server lines:", len(server_js.splitlines()))
-print("order lines:", len(order_html.splitlines()))
-print("admin lines:", len(admin_html.splitlines()))
-print("report lines:", len(report_html.splitlines()))
