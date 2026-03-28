@@ -223,7 +223,7 @@ function filterRowsByKeyword(rows, keyword) {
 }
 
 function requireReportToken(req, res, next) {
-  const token = req.headers["x-report-token"];
+  const token = req.headers["x-report-token"] || req.query.token;
   if (token === "7929-ok") return next();
   return res.status(401).json({ error: "未授權，請先登入報表系統" });
 }
