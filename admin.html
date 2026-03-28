@@ -26,19 +26,39 @@ h1{margin:0 0 10px;}
 .done-btn{background:#2563eb;color:white;}
 .delete-btn{background:#dc2626;color:white;}
 .edit-btn{background:#f59e0b;color:white;}
+
+.cash-box{
+  background:#fff7ed;
+  border:2px solid #fdba74;
+  border-radius:16px;
+  padding:18px;
+  margin-bottom:18px;
+}
+.cash-title{
+  font-size:20px;
+  color:#9a3412;
+  font-weight:800;
+  margin-bottom:8px;
+}
+.cash-value{
+  font-size:36px;
+  color:#c2410c;
+  font-weight:900;
+}
+
 .modal-bg{
   position:fixed;inset:0;background:rgba(0,0,0,0.45);
   display:none;align-items:center;justify-content:center;z-index:9999;
 }
 .modal{
-  width:min(900px,92vw);max-height:90vh;overflow:auto;
+  width:min(920px,94vw);max-height:92vh;overflow:auto;
   background:white;border-radius:18px;padding:20px;
 }
 .editor-row{
   border:1px solid #ddd;border-radius:12px;padding:12px;margin-bottom:12px;
 }
-.editor-row select,.editor-row input{
-  width:100%;padding:12px;margin:6px 0;font-size:16px;border:1px solid #ccc;border-radius:10px;
+.editor-row select,.editor-row input,#edit-order-type{
+  width:100%;padding:12px;margin:6px 0;font-size:16px;border:1px solid #ccc;border-radius:10px;box-sizing:border-box;
 }
 .editor-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
 .small-btn{
@@ -48,6 +68,7 @@ h1{margin:0 0 10px;}
 .remove-item-btn{background:#dc2626;}
 .total-box{font-size:28px;font-weight:900;color:#c95a00;margin-top:12px;}
 .empty-text{color:#777;font-size:18px;padding:8px 0;}
+
 .pay-calc{
   border:1px solid #ddd;
   border-radius:12px;
@@ -55,21 +76,44 @@ h1{margin:0 0 10px;}
   margin-top:12px;
   background:#fafafa;
 }
-.pay-calc input, .pay-calc select{
+.pay-calc input{
   width:100%;
   box-sizing:border-box;
-  padding:12px;
+  padding:14px;
   margin-top:8px;
   margin-bottom:12px;
-  font-size:18px;
+  font-size:22px;
   border:1px solid #ccc;
   border-radius:10px;
 }
 .pay-calc .calc-result{
-  font-size:22px;
+  font-size:26px;
   font-weight:800;
   color:#c95a00;
   margin-bottom:12px;
+}
+
+.keypad{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:10px;
+  margin-top:12px;
+}
+.keypad button{
+  border:none;
+  border-radius:14px;
+  background:#111;
+  color:white;
+  font-size:28px;
+  font-weight:900;
+  padding:20px 0;
+  cursor:pointer;
+}
+.keypad .wide{
+  grid-column:span 2;
+}
+.keypad .clear{
+  background:#dc2626;
 }
 </style>
 </head>
@@ -84,6 +128,11 @@ h1{margin:0 0 10px;}
   </div>
 
   <h1>PURO POS 後台</h1>
+
+  <div class="cash-box">
+    <div class="cash-title">今日錢櫃應有金額</div>
+    <div class="cash-value" id="cash-today">$0</div>
+  </div>
 
   <div class="section">
     <h2>未收款</h2>
@@ -116,12 +165,14 @@ h1{margin:0 0 10px;}
     </select>
 
     <div id="editor-list"></div>
+
     <div class="editor-actions">
       <button type="button" class="small-btn" onclick="addEditorRow('pizza')">+ 加 Pizza</button>
       <button type="button" class="small-btn" onclick="addEditorRow('drink')">+ 加 飲料/冰淇淋</button>
       <button type="button" class="small-btn" onclick="saveEdit()">儲存修改</button>
       <button type="button" class="small-btn" onclick="closeModal()">取消</button>
     </div>
+
     <div class="total-box">總價：<span id="editor-total">$0</span></div>
   </div>
 </div>
@@ -138,7 +189,25 @@ h1{margin:0 0 10px;}
 
       <div class="calc-result">找零：<span id="pay-change-result">$0</span></div>
 
-      <div class="editor-actions">
+      <div class="keypad">
+        <button onclick="pressKey('1')">1</button>
+        <button onclick="pressKey('2')">2</button>
+        <button onclick="pressKey('3')">3</button>
+        <button onclick="pressKey('4')">4</button>
+        <button onclick="pressKey('5')">5</button>
+        <button onclick="pressKey('6')">6</button>
+        <button onclick="pressKey('7')">7</button>
+        <button onclick="pressKey('8')">8</button>
+        <button onclick="pressKey('9')">9</button>
+        <button class="clear" onclick="clearKeypad()">清除</button>
+        <button onclick="pressKey('0')">0</button>
+        <button onclick="backspaceKey()">←</button>
+        <button class="wide" onclick="setQuickAmount(100)">100</button>
+        <button onclick="setQuickAmount(500)">500</button>
+        <button onclick="setQuickAmount(1000)">1000</button>
+      </div>
+
+      <div class="editor-actions" style="margin-top:16px;">
         <button type="button" class="small-btn" onclick="confirmPay()">確認收款</button>
         <button type="button" class="small-btn" onclick="closePayModal()">取消</button>
       </div>
@@ -149,10 +218,7 @@ h1{margin:0 0 10px;}
 <script src="/menu.js"></script>
 <script>
 const ADMIN_TOKEN = sessionStorage.getItem("admin_auth_token");
-
-if (!ADMIN_TOKEN) {
-  window.location.href = "/admin-login.html";
-}
+if (!ADMIN_TOKEN) window.location.href = "/admin-login.html";
 
 const MENU = window.PURO_MENU;
 let currentEditingId = null;
@@ -167,21 +233,22 @@ async function adminFetch(url, options = {}) {
       "x-admin-token": ADMIN_TOKEN
     }
   };
-
   const res = await fetch(url, finalOptions);
-
   if (res.status === 401) {
     sessionStorage.removeItem("admin_auth_token");
     window.location.href = "/admin-login.html";
     throw new Error("未授權");
   }
-
   return res;
 }
 
 function logout() {
   sessionStorage.removeItem("admin_auth_token");
   window.location.href = "/admin-login.html";
+}
+
+function money(n){
+  return "$" + Number(n || 0);
 }
 
 function renderItems(items){
@@ -196,15 +263,13 @@ function buildOrderHtml(o, type){
         <button type="button" class="pay-btn" onclick="openPayModal('${o.id}', ${o.price})">💰 收款</button>
         <button type="button" class="edit-btn" onclick="openEditModal('${o.id}')">✏️ 修改</button>
         <button type="button" class="delete-btn" onclick="deleteOrder('${o.id}')">🗑 刪除</button>
-      </div>
-    `;
+      </div>`;
   }
   if(type === "making"){
     buttons = `
       <div class="action-row">
         <button type="button" class="done-btn" onclick="doneOrder('${o.id}')">✅ 完成</button>
-      </div>
-    `;
+      </div>`;
   }
   return `
     <div class="order">
@@ -213,8 +278,7 @@ function buildOrderHtml(o, type){
       ${renderItems(o.items)}
       <div class="price">$${o.price || 0}</div>
       ${buttons}
-    </div>
-  `;
+    </div>`;
 }
 
 function getTodayStart() {
@@ -223,12 +287,21 @@ function getTodayStart() {
   return d.getTime();
 }
 
+function calcTodayCash(orders) {
+  const todayStart = getTodayStart();
+  return orders
+    .filter(o => (o.status === "making" || o.status === "waiting" || o.status === "done") && (o.createdAt || 0) >= todayStart)
+    .reduce((sum, o) => sum + (Number(o.paidAmount || 0) - Number(o.changeAmount || 0)), 0);
+}
+
 async function loadOrders(showMessage = false){
   try {
     const res = await adminFetch("/orders?_t=" + Date.now(), { cache: "no-store" });
     const orders = await res.json();
 
     const todayStart = getTodayStart();
+
+    document.getElementById("cash-today").innerText = money(calcTodayCash(orders));
 
     const pendingOrders = orders
       .filter(o => o.status === "pending")
@@ -286,9 +359,30 @@ function updateChange(){
   document.getElementById("pay-change-result").innerText = "$" + change;
 }
 
+function pressKey(key){
+  const input = document.getElementById("pay-paid-amount");
+  input.value = String(input.value || "") + key;
+  updateChange();
+}
+
+function clearKeypad(){
+  document.getElementById("pay-paid-amount").value = "";
+  updateChange();
+}
+
+function backspaceKey(){
+  const input = document.getElementById("pay-paid-amount");
+  input.value = String(input.value || "").slice(0, -1);
+  updateChange();
+}
+
+function setQuickAmount(amount){
+  document.getElementById("pay-paid-amount").value = String(amount);
+  updateChange();
+}
+
 async function confirmPay(){
   const paidAmount = Number(document.getElementById("pay-paid-amount").value || 0);
-
   if (!paidAmount || paidAmount < currentPayTotal) {
     alert("收款金額不足");
     return;
@@ -299,7 +393,6 @@ async function confirmPay(){
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ paidAmount })
   });
-
   const data = await res.json();
   if (!res.ok) {
     alert(data.error || "收款失敗");
@@ -337,15 +430,12 @@ function createPizzaRowHtml(item = null){
   const pizzaOptions = MENU.pizzas.map(p =>
     `<option value="${p.id}" ${item && item.menuId === p.id ? "selected" : ""}>${p.name}</option>`
   ).join("");
-
   const size = item?.size || "方形";
 
   return `
     <div class="editor-row" data-type="pizza">
       <label>Pizza 口味</label>
-      <select class="pizza-select" onchange="refreshRowPrice(this.closest('.editor-row'))">
-        ${pizzaOptions}
-      </select>
+      <select class="pizza-select" onchange="refreshRowPrice(this.closest('.editor-row'))">${pizzaOptions}</select>
 
       <label>尺寸</label>
       <select class="pizza-size" onchange="refreshRowPrice(this.closest('.editor-row'))">
@@ -357,8 +447,7 @@ function createPizzaRowHtml(item = null){
       <input class="row-price" type="number" value="${item?.price || 0}" />
 
       <button type="button" class="small-btn remove-item-btn" onclick="removeEditorRow(this)">刪除此品項</button>
-    </div>
-  `;
+    </div>`;
 }
 
 function createDrinkRowHtml(item = null){
@@ -369,16 +458,13 @@ function createDrinkRowHtml(item = null){
   return `
     <div class="editor-row" data-type="drink">
       <label>飲料 / 冰淇淋</label>
-      <select class="drink-select" onchange="refreshRowPrice(this.closest('.editor-row'))">
-        ${drinkOptions}
-      </select>
+      <select class="drink-select" onchange="refreshRowPrice(this.closest('.editor-row'))">${drinkOptions}</select>
 
       <label>價格</label>
       <input class="row-price" type="number" value="${item?.price || 0}" />
 
       <button type="button" class="small-btn remove-item-btn" onclick="removeEditorRow(this)">刪除此品項</button>
-    </div>
-  `;
+    </div>`;
 }
 
 function addEditorRow(type, item = null){
@@ -388,7 +474,6 @@ function addEditorRow(type, item = null){
   } else {
     list.insertAdjacentHTML("beforeend", createDrinkRowHtml(item));
   }
-
   const rows = list.querySelectorAll(".editor-row");
   const lastRow = rows[rows.length - 1];
   refreshRowPrice(lastRow);
@@ -402,7 +487,6 @@ function removeEditorRow(btn){
 
 function refreshRowPrice(row){
   const type = row.dataset.type;
-
   if(type === "pizza"){
     const pizzaId = row.querySelector(".pizza-select").value;
     const size = row.querySelector(".pizza-size").value;
@@ -410,13 +494,11 @@ function refreshRowPrice(row){
     const price = size === "方形" ? pizza.square : pizza.round;
     row.querySelector(".row-price").value = price;
   }
-
   if(type === "drink"){
     const drinkId = row.querySelector(".drink-select").value;
     const drink = MENU.drinks.find(d => d.id === drinkId);
     row.querySelector(".row-price").value = drink.price;
   }
-
   recalcEditorTotal();
 }
 
@@ -443,16 +525,9 @@ async function openEditModal(id){
     const drink = MENU.drinks.find(d => d.name === item.name);
 
     if(pizza){
-      addEditorRow("pizza", {
-        menuId: pizza.id,
-        size: item.size,
-        price: item.price
-      });
+      addEditorRow("pizza", { menuId: pizza.id, size: item.size, price: item.price });
     } else if(drink){
-      addEditorRow("drink", {
-        menuId: drink.id,
-        price: item.price
-      });
+      addEditorRow("drink", { menuId: drink.id, price: item.price });
     }
   });
 
@@ -484,23 +559,13 @@ async function saveEdit(){
       const pizzaId = row.querySelector(".pizza-select").value;
       const size = row.querySelector(".pizza-size").value;
       const pizza = MENU.pizzas.find(p => p.id === pizzaId);
-
-      items.push({
-        name: pizza.name,
-        size,
-        price
-      });
+      items.push({ name: pizza.name, size, price });
     }
 
     if(type === "drink"){
       const drinkId = row.querySelector(".drink-select").value;
       const drink = MENU.drinks.find(d => d.id === drinkId);
-
-      items.push({
-        name: drink.name,
-        size: "單品",
-        price
-      });
+      items.push({ name: drink.name, size: "單品", price });
     }
   });
 
@@ -526,3 +591,26 @@ setInterval(loadOrders, 2000);
 
 </body>
 </html>
+'''
+# write files
+for name, content in {
+    "server.js": server_js,
+    "admin-login.html": admin_login_html,
+    "report-login.html": report_login_html,
+    "menu.js": menu_js,
+    "order.html": order_html,
+    "admin.html": admin_html,
+    "report.html": report_html,
+}.items():
+    (base / name).write_text(content, encoding="utf-8")
+
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+    for p in base.iterdir():
+        zf.write(p, arcname=p.name)
+
+print("updated zip")
+print(zip_path)
+print("server lines:", len(server_js.splitlines()))
+print("order lines:", len(order_html.splitlines()))
+print("admin lines:", len(admin_html.splitlines()))
+print("report lines:", len(report_html.splitlines()))
