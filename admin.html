@@ -537,6 +537,7 @@ function buildOrderHtml(o, type){
         <button type="button" class="pay-btn" onclick="openPayModal('${o.id}', ${o.price})">收款</button>
         <button type="button" class="edit-btn" onclick="openEditModal('${o.id}')">修改</button>
         <button type="button" class="delete-btn" onclick="deleteOrder('${o.id}')">刪除</button>
+        <button type="button" class="print-btn" onclick="choosePrintType('${o.id}')">列印</button>
       </div>
     `;
   }
