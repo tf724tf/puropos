@@ -512,29 +512,32 @@ app.post("/pay/:id", requireAdminToken, async (req, res) => {
 
 app.post("/done/:id", requireAdminToken, async (req, res) => {
   try {
-    await pool.query(
-      `UPDATE orders
-       SET status = 'done',
-           completed_at = $1
-       WHERE id = $2`,
-      [Date.now(), req.params.id]
-    );
+    const { error: doneError } = await supabase
+      .from("orders")
+      .update({
+        status: "done",
+        completed_at: Date.now()
+      })
+      .eq("id", req.params.id);
 
-    const waitingResult = await pool.query(
-      `SELECT id
-       FROM orders
-       WHERE status = 'waiting'
-       ORDER BY created_at ASC
-       LIMIT 1`
-    );
+    if (doneError) throw doneError;
 
-    if (waitingResult.rows.length > 0) {
-      await pool.query(
-        `UPDATE orders
-         SET status = 'making'
-         WHERE id = $1`,
-        [waitingResult.rows[0].id]
-      );
+    const { data: waitingOrders, error: waitingError } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("status", "waiting")
+      .order("created_at", { ascending: true })
+      .limit(1);
+
+    if (waitingError) throw waitingError;
+
+    if (waitingOrders && waitingOrders.length > 0) {
+      const { error: promoteError } = await supabase
+        .from("orders")
+        .update({ status: "making" })
+        .eq("id", waitingOrders[0].id);
+
+      if (promoteError) throw promoteError;
     }
 
     res.json({ success: true });
@@ -552,14 +555,16 @@ app.post("/delete/:id", requireAdminToken, async (req, res) => {
       return res.status(400).json({ error: "刪除原因必填" });
     }
 
-    await pool.query(
-      `UPDATE orders
-       SET status = 'deleted',
-           delete_reason = $1,
-           deleted_at = $2
-       WHERE id = $3`,
-      [reason.trim(), Date.now(), req.params.id]
-    );
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        status: "deleted",
+        delete_reason: reason.trim(),
+        deleted_at: Date.now()
+      })
+      .eq("id", req.params.id);
+
+    if (error) throw error;
 
     res.json({ success: true });
   } catch (err) {
@@ -584,15 +589,17 @@ app.post("/update-order/:id", requireAdminToken, async (req, res) => {
       return sum + Number(item.price || 0);
     }, 0);
 
-    await pool.query(
-      `UPDATE orders
-       SET items = $1,
-           price = $2,
-           order_type = $3
-       WHERE id = $4
-         AND status = 'pending'`,
-      [JSON.stringify(items), totalPrice, orderType, req.params.id]
-    );
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        items,
+        price: totalPrice,
+        order_type: orderType
+      })
+      .eq("id", req.params.id)
+      .eq("status", "pending");
+
+    if (error) throw error;
 
     res.json({ success: true });
   } catch (err) {
