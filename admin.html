@@ -45,6 +45,11 @@ h2{
   font-size:22px;
 }
 
+h3{
+  margin:0 0 12px;
+  font-size:22px;
+}
+
 .topbar{
   display:flex;
   gap:10px;
@@ -84,7 +89,7 @@ h2{
 
 .dashboard{
   display:grid;
-  grid-template-columns:repeat(3, 1fr);
+  grid-template-columns:repeat(4, 1fr);
   gap:12px;
   margin-bottom:16px;
 }
@@ -106,6 +111,21 @@ h2{
   font-size:28px;
   font-weight:900;
   color:var(--accent);
+}
+
+.start-cash-input{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #d1d5db;
+  font-size:16px;
+  outline:none;
+}
+
+.start-cash-note{
+  margin-top:8px;
+  font-size:12px;
+  color:var(--muted);
 }
 
 .order{
@@ -219,7 +239,7 @@ h2{
 
 .pay-layout{
   display:grid;
-  grid-template-columns: minmax(280px, 1fr) 320px;
+  grid-template-columns:minmax(280px, 1fr) 320px;
   gap:16px;
   margin-top:12px;
 }
@@ -315,6 +335,12 @@ h2{
   margin-top:8px;
 }
 
+@media(max-width:980px){
+  .dashboard{
+    grid-template-columns:repeat(2, 1fr);
+  }
+}
+
 @media(max-width:900px){
   .pay-layout{
     grid-template-columns:1fr;
@@ -347,13 +373,27 @@ h2{
 
   <div class="dashboard">
     <div class="stat-card">
+      <div class="stat-label">開店起始金額</div>
+      <input
+        id="start-cash"
+        class="start-cash-input"
+        type="number"
+        placeholder="輸入開店金額"
+        oninput="updateStartCash()"
+      />
+      <div class="start-cash-note">會暫存在本機瀏覽器</div>
+    </div>
+
+    <div class="stat-card">
       <div class="stat-label">今日錢櫃金額</div>
       <div class="stat-value" id="cash-drawer-total">$0</div>
     </div>
+
     <div class="stat-card">
       <div class="stat-label">今日已收款訂單</div>
       <div class="stat-value" id="paid-order-count">0</div>
     </div>
+
     <div class="stat-card">
       <div class="stat-label">今日已收現金總額</div>
       <div class="stat-value" id="paid-amount-total">$0</div>
@@ -428,7 +468,7 @@ h2{
           <button type="button" class="small-btn" onclick="closePayModal()">取消</button>
         </div>
 
-        <div class="money-note">今日錢櫃金額會用今天已收款訂單的「實收 - 找零」自動計算。</div>
+        <div class="money-note">今日錢櫃金額 = 開店起始金額 + 今日實收金額 - 今日找零</div>
       </div>
 
       <div class="keypad">
@@ -473,6 +513,7 @@ const MENU = window.PURO_MENU;
 let currentEditingId = null;
 let currentPayId = null;
 let currentPayTotal = 0;
+let startCash = Number(localStorage.getItem("start_cash") || 0);
 
 async function adminFetch(url, options = {}) {
   const finalOptions = {
@@ -497,6 +538,17 @@ async function adminFetch(url, options = {}) {
 function logout() {
   sessionStorage.removeItem("admin_auth_token");
   window.location.href = "/admin-login.html";
+}
+
+function formatMoney(n){
+  return "$" + Number(n || 0).toLocaleString("zh-TW");
+}
+
+function updateStartCash(){
+  const val = Number(document.getElementById("start-cash").value || 0);
+  startCash = val;
+  localStorage.setItem("start_cash", val);
+  loadOrders();
 }
 
 function renderItems(items){
@@ -538,10 +590,6 @@ function getTodayStart() {
   return d.getTime();
 }
 
-function formatMoney(n){
-  return "$" + Number(n || 0).toLocaleString("zh-TW");
-}
-
 function updateCashDrawerStats(orders){
   const todayStart = getTodayStart();
 
@@ -551,9 +599,11 @@ function updateCashDrawerStats(orders){
     Number(o.paidAmount || 0) > 0
   );
 
-  const cashDrawerTotal = paidTodayOrders.reduce((sum, o) => {
+  const todayCash = paidTodayOrders.reduce((sum, o) => {
     return sum + (Number(o.paidAmount || 0) - Number(o.changeAmount || 0));
   }, 0);
+
+  const cashDrawerTotal = startCash + todayCash;
 
   const paidAmountTotal = paidTodayOrders.reduce((sum, o) => {
     return sum + Number(o.paidAmount || 0);
@@ -599,6 +649,7 @@ async function loadOrders(showMessage = false){
     document.getElementById("done").innerHTML =
       doneOrders.length ? doneOrders.map(o => buildOrderHtml(o, "done")).join("") : `<div class="empty-text">今天還沒有完成訂單</div>`;
 
+    document.getElementById("start-cash").value = startCash;
     updateCashDrawerStats(orders);
 
     if (showMessage) console.log("已刷新");
