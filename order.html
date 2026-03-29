@@ -17,32 +17,39 @@
       --danger: #dc2626;
       --shadow: 0 8px 24px rgba(0,0,0,0.06);
     }
+
     * { box-sizing: border-box; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
       background: var(--bg);
       color: var(--text);
     }
+
     .wrap {
       max-width: 980px;
       margin: 0 auto;
       padding: 24px 18px 40px;
     }
+
     .hero {
       text-align: center;
       margin-bottom: 18px;
     }
+
     .logo {
       font-size: 38px;
       font-weight: 900;
       letter-spacing: 0.5px;
       margin-bottom: 6px;
     }
+
     .sub {
       color: var(--muted);
       font-size: 16px;
     }
+
     .section {
       background: var(--card);
       border-radius: 18px;
@@ -51,21 +58,25 @@
       box-shadow: var(--shadow);
       border: 1px solid rgba(0,0,0,0.04);
     }
+
     .section-title {
       font-size: 18px;
       font-weight: 900;
       margin-bottom: 12px;
     }
+
     .type-tabs,
     .menu-tabs {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
     }
+
     .tab-btn,
     .add-btn,
     .submit-btn,
-    .remove-btn {
+    .remove-btn,
+    .back-btn {
       border: none;
       border-radius: 12px;
       min-height: 48px;
@@ -76,6 +87,7 @@
       touch-action: manipulation;
       transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
     }
+
     .tab-btn:active,
     .add-btn:active,
     .submit-btn:active,
@@ -83,17 +95,21 @@
     .size-card:active {
       transform: scale(0.98);
     }
-    .tab-btn {
+
+    .tab-btn,
+    .back-btn {
       background: #fff;
       border: 1px solid #d1d5db;
       color: var(--text);
       min-width: 92px;
     }
+
     .active {
       background: var(--primary) !important;
       color: #fff !important;
       border-color: var(--primary) !important;
     }
+
     .type-banner {
       display: inline-flex;
       align-items: center;
@@ -107,35 +123,41 @@
       font-size: 14px;
       border: 1px solid #fed7aa;
     }
+
     .menu-list {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
     }
+
     .menu-item {
       border: 1px solid var(--line);
       border-radius: 16px;
       padding: 14px;
       background: #fff;
     }
+
     .menu-title {
       font-size: 19px;
       font-weight: 900;
       margin-bottom: 4px;
     }
+
     .menu-desc {
       color: var(--muted);
       margin-bottom: 10px;
       font-size: 14px;
       line-height: 1.55;
-      min-height: 44px;
+      min-height: 22px;
     }
+
     .pizza-size-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       margin-top: 8px;
     }
+
     .size-card {
       background: #111;
       color: white;
@@ -148,47 +170,45 @@
       border: none;
       touch-action: manipulation;
     }
+
     .size-title {
       font-size: 16px;
       margin-bottom: 2px;
     }
+
     .size-sub {
       font-size: 11px;
       opacity: 0.82;
       margin-bottom: 4px;
     }
+
     .size-price {
       font-size: 18px;
       color: #fbbf24;
       font-weight: 900;
     }
-    .drink-row {
+
+    .single-price-box {
+      margin-top: 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 10px;
     }
-    .drink-price {
+
+    .single-price {
       color: var(--accent);
       font-size: 20px;
       font-weight: 900;
       white-space: nowrap;
     }
-    .add-btn {
-      background: var(--primary);
-      color: white;
-      min-width: 112px;
-      width: auto;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
+
     .cart-title {
       font-size: 22px;
       font-weight: 900;
       margin-bottom: 12px;
     }
+
     .cart-item {
       display: flex;
       align-items: center;
@@ -197,13 +217,16 @@
       border-bottom: 1px solid #f0f0f0;
       padding: 10px 0;
     }
+
     .cart-item:last-child {
       border-bottom: none;
     }
+
     .cart-item-text {
       font-size: 15px;
       line-height: 1.5;
     }
+
     .remove-btn {
       background: #fff;
       color: var(--danger);
@@ -214,6 +237,7 @@
       font-size: 14px;
       flex-shrink: 0;
     }
+
     .total-wrap {
       display: flex;
       justify-content: space-between;
@@ -222,21 +246,25 @@
       padding-top: 14px;
       border-top: 1px dashed #ddd;
     }
+
     .total-label {
       font-size: 16px;
       color: var(--muted);
       font-weight: 700;
     }
+
     .total {
       font-size: 28px;
       font-weight: 900;
       color: var(--accent);
     }
+
     .submit-row {
       margin-top: 14px;
       display: flex;
       justify-content: flex-end;
     }
+
     .submit-btn {
       background: var(--green);
       color: white;
@@ -244,6 +272,7 @@
       width: auto;
       padding: 10px 18px;
     }
+
     .success-box {
       display: none;
       background: #ecfdf3;
@@ -258,51 +287,64 @@
       line-height: 1.7;
       box-shadow: var(--shadow);
     }
+
     .muted {
       color: #777;
       font-size: 15px;
     }
+
     @media (max-width: 860px) {
       .menu-list {
         grid-template-columns: 1fr;
       }
     }
+
     @media (max-width: 700px) {
       .wrap {
         padding: 16px 12px 28px;
       }
+
       .logo {
         font-size: 32px;
       }
+
       .sub {
         font-size: 15px;
       }
+
       .pizza-size-grid {
         grid-template-columns: 1fr 1fr;
       }
+
       .cart-item {
         align-items: flex-start;
         flex-direction: column;
       }
+
       .remove-btn {
         align-self: flex-end;
       }
+
       .submit-row {
         justify-content: stretch;
       }
+
       .submit-btn {
         width: 100%;
       }
     }
+
     @media (max-width: 480px) {
       .pizza-size-grid {
         grid-template-columns: 1fr;
       }
+
       .type-tabs,
       .menu-tabs {
         display: grid;
         grid-template-columns: 1fr 1fr;
       }
+
       .tab-btn {
         width: 100%;
         min-width: 0;
@@ -329,10 +371,7 @@
 
     <div class="section">
       <div class="type-banner">目前點餐類型：<span id="current-order-type">內用</span></div>
-      <div class="menu-tabs">
-        <button id="tab-pizza" class="tab-btn active" onclick="switchTab('pizza')">Pizza</button>
-        <button id="tab-drink" class="tab-btn" onclick="switchTab('drink')">飲料 / 冰淇淋</button>
-      </div>
+      <div id="category-tabs" class="menu-tabs"></div>
     </div>
 
     <div class="section">
@@ -355,60 +394,19 @@
   </div>
 
   <script>
-    let MENU = {
-      pizzas: [],
-      drinks: []
-    };
-
-    let currentTab = "pizza";
+    let categories = [];
+    let products = [];
+    let currentCategory = "";
     let cart = [];
     let orderType = "內用";
 
-    function normalizeCategory(value) {
-      const text = String(value || "").trim().toLowerCase();
-
-      if (["pizza", "披薩"].includes(text)) return "pizza";
-      if (["drink", "drinks", "飲料", "冰淇淋"].includes(text)) return "drink";
-
-      return text;
+    function money(n) {
+      return "$" + Number(n || 0);
     }
 
-    async function loadProducts() {
-      try {
-        const res = await fetch("/api/products");
-        const data = await res.json();
-
-        console.log("api/products =", data);
-
-        if (!res.ok) {
-          alert(data.error || "讀取商品失敗");
-          return;
-        }
-
-        const pizzas = data
-          .filter((p) => normalizeCategory(p.category) === "pizza")
-          .map((p) => ({
-            id: p.id,
-            name: p.name,
-            desc: p.description || "",
-            square: Number(p.price_square ?? p.square ?? p.price ?? 0),
-            round: Number(p.price_round ?? p.round ?? p.price ?? 0)
-          }));
-
-        const drinks = data
-          .filter((p) => normalizeCategory(p.category) === "drink")
-          .map((p) => ({
-            id: p.id,
-            name: p.name,
-            price: Number(p.price ?? 0)
-          }));
-
-        MENU = { pizzas, drinks };
-        renderMenu();
-      } catch (err) {
-        console.error("載入商品失敗:", err);
-        alert("載入商品失敗");
-      }
+    function isPizzaProduct(product) {
+      const slug = String(product.category || "").toLowerCase();
+      return slug === "pizza" || (product.price_square != null && product.price_round != null);
     }
 
     function setOrderType(type) {
@@ -418,81 +416,127 @@
       document.getElementById("current-order-type").innerText = type;
     }
 
-    function switchTab(tab) {
-      currentTab = tab;
-      document.getElementById("tab-pizza").classList.toggle("active", tab === "pizza");
-      document.getElementById("tab-drink").classList.toggle("active", tab === "drink");
+    async function loadCategories() {
+      const res = await fetch("/api/categories");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "讀取分類失敗");
+      }
+
+      categories = data || [];
+    }
+
+    async function loadProducts() {
+      const res = await fetch("/api/products");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "讀取商品失敗");
+      }
+
+      products = data || [];
+    }
+
+    function renderCategoryTabs() {
+      const box = document.getElementById("category-tabs");
+
+      if (!categories.length) {
+        box.innerHTML = `<div class="muted">目前沒有分類</div>`;
+        return;
+      }
+
+      if (!currentCategory) {
+        currentCategory = categories[0].slug;
+      }
+
+      box.innerHTML = categories.map(cat => `
+        <button
+          class="tab-btn ${currentCategory === cat.slug ? "active" : ""}"
+          onclick="switchCategory('${cat.slug}')"
+        >
+          ${cat.name}
+        </button>
+      `).join("");
+    }
+
+    function switchCategory(slug) {
+      currentCategory = slug;
+      renderCategoryTabs();
       renderMenu();
     }
 
     function renderMenu() {
       const list = document.getElementById("menu-list");
 
-      if (currentTab === "pizza") {
-        if (!MENU.pizzas.length) {
-          list.innerHTML = `<div class="muted">目前沒有 Pizza 商品</div>`;
-          return;
-        }
+      const filtered = products.filter(p => String(p.category || "").toLowerCase() === String(currentCategory || "").toLowerCase());
 
-        list.innerHTML = MENU.pizzas.map(item => `
-          <div class="menu-item">
-            <div class="menu-title">${item.name}</div>
-            <div class="menu-desc">${item.desc}</div>
-
-            <div class="pizza-size-grid">
-              <button class="size-card" onclick="addPizza('${item.id}','方形',${item.square})">
-                <div class="size-title">方形</div>
-                <div class="size-sub">15×24CM</div>
-                <div class="size-price">$${item.square}</div>
-              </button>
-
-              <button class="size-card" onclick="addPizza('${item.id}','圓形',${item.round})">
-                <div class="size-title">圓形</div>
-                <div class="size-sub">9吋</div>
-                <div class="size-price">$${item.round}</div>
-              </button>
-            </div>
-          </div>
-        `).join("");
-      } else {
-        if (!MENU.drinks.length) {
-          list.innerHTML = `<div class="muted">目前沒有飲料 / 冰淇淋商品</div>`;
-          return;
-        }
-
-        list.innerHTML = MENU.drinks.map(item => `
-          <div class="menu-item">
-            <div class="drink-row">
-              <div class="menu-title">${item.name}</div>
-              <div class="drink-price">$${item.price}</div>
-            </div>
-            <button class="add-btn" onclick="addDrink('${item.id}',${item.price})">加入購物車</button>
-          </div>
-        `).join("");
+      if (!filtered.length) {
+        list.innerHTML = `<div class="muted">這個分類目前沒有商品</div>`;
+        return;
       }
+
+      list.innerHTML = filtered.map(item => {
+        if (isPizzaProduct(item)) {
+          return `
+            <div class="menu-item">
+              <div class="menu-title">${item.name || ""}</div>
+              <div class="menu-desc">${item.description || ""}</div>
+
+              <div class="pizza-size-grid">
+                <button class="size-card" onclick="addPizza('${item.id}', '方形', ${Number(item.price_square || 0)})">
+                  <div class="size-title">方形</div>
+                  <div class="size-sub">15×24CM</div>
+                  <div class="size-price">${money(item.price_square || 0)}</div>
+                </button>
+
+                <button class="size-card" onclick="addPizza('${item.id}', '圓形', ${Number(item.price_round || 0)})">
+                  <div class="size-title">圓形</div>
+                  <div class="size-sub">9吋</div>
+                  <div class="size-price">${money(item.price_round || 0)}</div>
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="menu-item">
+            <div class="menu-title">${item.name || ""}</div>
+            <div class="menu-desc">${item.description || ""}</div>
+
+            <div class="single-price-box">
+              <div class="single-price">${money(item.price || 0)}</div>
+              <button class="add-btn" onclick="addSingle('${item.id}', ${Number(item.price || 0)})">加入購物車</button>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
 
     function addPizza(id, size, price) {
-      const item = MENU.pizzas.find(p => p.id === id);
+      const item = products.find(p => String(p.id) === String(id));
       if (!item) return;
 
       cart.push({
         name: item.name,
         size,
-        price
+        price: Number(price || 0)
       });
+
       renderCart();
     }
 
-    function addDrink(id, price) {
-      const item = MENU.drinks.find(d => d.id === id);
+    function addSingle(id, price) {
+      const item = products.find(p => String(p.id) === String(id));
       if (!item) return;
 
       cart.push({
         name: item.name,
         size: "單品",
-        price
+        price: Number(price || 0)
       });
+
       renderCart();
     }
 
@@ -504,7 +548,7 @@
     function renderCart() {
       const list = document.getElementById("cart-list");
       const total = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
-      document.getElementById("cart-total").innerText = "$" + total;
+      document.getElementById("cart-total").innerText = money(total);
 
       if (!cart.length) {
         list.innerHTML = "尚未加入任何品項";
@@ -515,7 +559,7 @@
       list.className = "";
       list.innerHTML = cart.map((item, index) => `
         <div class="cart-item">
-          <div class="cart-item-text">${item.name}｜${item.size}｜$${item.price}</div>
+          <div class="cart-item-text">${item.name}｜${item.size}｜${money(item.price)}</div>
           <button class="remove-btn" onclick="removeCartItem(${index})">刪除</button>
         </div>
       `).join("");
@@ -560,8 +604,20 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    loadProducts();
-    renderCart();
+    async function initPage() {
+      try {
+        await loadCategories();
+        await loadProducts();
+        renderCategoryTabs();
+        renderMenu();
+        renderCart();
+      } catch (err) {
+        console.error(err);
+        document.getElementById("menu-list").innerHTML = `<div class="muted">載入商品失敗</div>`;
+      }
+    }
+
+    initPage();
   </script>
 </body>
 </html>
