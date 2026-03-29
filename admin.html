@@ -169,6 +169,27 @@
       .btn,.pay-btn,.done-btn,.delete-btn,.edit-btn,.small-btn{width:100%;}
     }
   </style>
+  #num-pad{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+  margin-top:16px;
+}
+
+#num-pad button{
+  height:90px;
+  font-size:28px;
+  font-weight:900;
+  border-radius:18px;
+  border:none;
+  background:#111;
+  color:#fff;
+}
+
+#num-pad button:active{
+  transform:scale(0.95);
+  background:#333;
+}
 </head>
 <body>
 
