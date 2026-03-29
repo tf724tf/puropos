@@ -946,6 +946,187 @@ async function saveEdit(){
 
 loadOrders();
 setInterval(loadOrders, 2000);
+</script><script>
+  let editingProductId = null;
+
+  async function adminApiFetch(url, options = {}) {
+    const token = sessionStorage.getItem("admin_auth_token");
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-token": token,
+        ...(options.headers || {})
+      }
+    });
+
+    if (res.status === 401) {
+      sessionStorage.removeItem("admin_auth_token");
+      alert("登入逾時，請重新登入");
+      window.location.href = "/admin-login.html";
+      throw new Error("未授權");
+    }
+
+    return res;
+  }
+
+  function getProductFormData() {
+    return {
+      name: document.getElementById("product-name").value.trim(),
+      category: document.getElementById("product-category").value,
+      description: document.getElementById("product-description").value.trim(),
+      price: document.getElementById("product-price").value,
+      price_square: document.getElementById("product-price-square").value,
+      price_round: document.getElementById("product-price-round").value,
+      sort_order: document.getElementById("product-sort-order").value,
+      is_active: document.getElementById("product-is-active").checked
+    };
+  }
+
+  function resetProductForm() {
+    editingProductId = null;
+    document.getElementById("product-name").value = "";
+    document.getElementById("product-category").value = "pizza";
+    document.getElementById("product-description").value = "";
+    document.getElementById("product-price").value = "";
+    document.getElementById("product-price-square").value = "";
+    document.getElementById("product-price-round").value = "";
+    document.getElementById("product-sort-order").value = "";
+    document.getElementById("product-is-active").checked = true;
+  }
+
+  async function loadAdminProducts() {
+    try {
+      const res = await adminApiFetch("/admin/products");
+      const rows = await res.json();
+      const body = document.getElementById("product-table-body");
+
+      if (!rows.length) {
+        body.innerHTML = `<tr><td colspan="7" style="padding:12px; color:#777;">目前沒有商品</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = rows.map(row => `
+        <tr>
+          <td style="padding:8px; border-bottom:1px solid #eee;">${row.name || ""}</td>
+          <td style="padding:8px; border-bottom:1px solid #eee;">${row.category || ""}</td>
+          <td style="padding:8px; border-bottom:1px solid #eee;">
+            ${row.category === "pizza"
+              ? `方 ${row.price_square ?? "-"} / 圓 ${row.price_round ?? "-"}`
+              : `${row.price ?? "-"}`
+            }
+          </td>
+          <td style="padding:8px; border-bottom:1px solid #eee;">${row.description || ""}</td>
+          <td style="padding:8px; border-bottom:1px solid #eee;">${row.sort_order ?? 0}</td>
+          <td style="padding:8px; border-bottom:1px solid #eee;">${row.is_active ? "上架" : "下架"}</td>
+          <td style="padding:8px; border-bottom:1px solid #eee;">
+            <button onclick='editProduct(${JSON.stringify(row).replace(/'/g, "&apos;")})'>編輯</button>
+            <button onclick="toggleProduct('${row.id}', ${row.is_active ? "false" : "true"})">
+              ${row.is_active ? "下架" : "上架"}
+            </button>
+            <button onclick="deleteProduct('${row.id}')">刪除</button>
+          </td>
+        </tr>
+      `).join("");
+    } catch (err) {
+      console.error("載入商品失敗", err);
+      alert("載入商品失敗");
+    }
+  }
+
+  function editProduct(row) {
+    editingProductId = row.id;
+    document.getElementById("product-name").value = row.name || "";
+    document.getElementById("product-category").value = row.category || "pizza";
+    document.getElementById("product-description").value = row.description || "";
+    document.getElementById("product-price").value = row.price ?? "";
+    document.getElementById("product-price-square").value = row.price_square ?? "";
+    document.getElementById("product-price-round").value = row.price_round ?? "";
+    document.getElementById("product-sort-order").value = row.sort_order ?? "";
+    document.getElementById("product-is-active").checked = !!row.is_active;
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  }
+
+  async function createProduct() {
+    try {
+      const payload = getProductFormData();
+
+      const url = editingProductId
+        ? `/admin/products/${editingProductId}`
+        : "/admin/products";
+
+      const method = editingProductId ? "PUT" : "POST";
+
+      const res = await adminApiFetch(url, {
+        method,
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "儲存失敗");
+        return;
+      }
+
+      alert(editingProductId ? "商品已更新" : "商品已新增");
+      resetProductForm();
+      loadAdminProducts();
+    } catch (err) {
+      console.error("儲存商品失敗", err);
+      alert("儲存商品失敗");
+    }
+  }
+
+  async function toggleProduct(id, nextState) {
+    try {
+      const res = await adminApiFetch(`/admin/products/${id}/toggle`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_active: nextState })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "切換失敗");
+        return;
+      }
+
+      loadAdminProducts();
+    } catch (err) {
+      console.error("切換商品狀態失敗", err);
+      alert("切換商品狀態失敗");
+    }
+  }
+
+  async function deleteProduct(id) {
+    if (!confirm("確定要刪除這個商品？")) return;
+
+    try {
+      const res = await adminApiFetch(`/admin/products/${id}`, {
+        method: "DELETE"
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "刪除失敗");
+        return;
+      }
+
+      if (editingProductId === id) {
+        resetProductForm();
+      }
+
+      loadAdminProducts();
+    } catch (err) {
+      console.error("刪除商品失敗", err);
+      alert("刪除商品失敗");
+    }
+  }
+
+  // 頁面載入後呼叫
+  loadAdminProducts();
 </script>
 <hr style="margin:32px 0;">
 
