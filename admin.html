@@ -947,6 +947,50 @@ async function saveEdit(){
 loadOrders();
 setInterval(loadOrders, 2000);
 </script>
+<hr style="margin:32px 0;">
 
+<section style="background:#fff; padding:20px; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.08); margin-bottom:24px;">
+  <h2 style="margin-top:0;">商品管理</h2>
+
+  <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin-bottom:16px;">
+    <input id="product-name" placeholder="商品名稱" style="padding:10px;">
+    <select id="product-category" style="padding:10px;">
+      <option value="pizza">Pizza</option>
+      <option value="drink">Drink</option>
+    </select>
+
+    <input id="product-description" placeholder="商品描述" style="padding:10px;">
+    <input id="product-price" type="number" placeholder="一般價格 / 飲料價格" style="padding:10px;">
+
+    <input id="product-price-square" type="number" placeholder="方形價格（pizza 用）" style="padding:10px;">
+    <input id="product-price-round" type="number" placeholder="圓形價格（pizza 用）" style="padding:10px;">
+
+    <input id="product-sort-order" type="number" placeholder="排序（越小越前面）" style="padding:10px;">
+    <label style="display:flex; align-items:center; gap:8px;">
+      <input id="product-is-active" type="checkbox" checked>
+      上架中
+    </label>
+  </div>
+
+  <div style="display:flex; gap:12px; margin-bottom:18px;">
+    <button onclick="createProduct()" style="padding:10px 16px;">新增商品</button>
+    <button onclick="resetProductForm()" style="padding:10px 16px;">清空表單</button>
+  </div>
+
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">名稱</th>
+        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">分類</th>
+        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">價格</th>
+        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">描述</th>
+        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">排序</th>
+        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">狀態</th>
+        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">操作</th>
+      </tr>
+    </thead>
+    <tbody id="product-table-body"></tbody>
+  </table>
+</section>
 </body>
 </html>
