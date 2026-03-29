@@ -1,363 +1,174 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PURO POS 後台</title>
-<style>
-:root{
-  --bg:#f6f4ef;
-  --card:#ffffff;
-  --text:#1f1f1f;
-  --muted:#6b7280;
-  --line:#e5e7eb;
-  --primary:#111111;
-  --green:#1f9d55;
-  --blue:#2563eb;
-  --orange:#f59e0b;
-  --danger:#dc2626;
-  --accent:#c95a00;
-  --shadow:0 8px 24px rgba(0,0,0,0.06);
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PURO POS 後台</title>
+  <style>
+    :root{
+      --bg:#f6f4ef;
+      --card:#ffffff;
+      --text:#1f1f1f;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --primary:#111111;
+      --green:#1f9d55;
+      --blue:#2563eb;
+      --orange:#f59e0b;
+      --danger:#dc2626;
+      --accent:#c95a00;
+      --shadow:0 8px 24px rgba(0,0,0,0.06);
+    }
+    *{box-sizing:border-box;}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .wrap{
+      max-width:1200px;
+      margin:auto;
+      padding:20px;
+    }
+    h1{margin:0 0 12px;font-size:28px;}
+    h2{margin:0 0 12px;font-size:22px;}
+    h3{margin:0 0 12px;font-size:20px;}
+    .topbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+    .btn,.pay-btn,.done-btn,.delete-btn,.edit-btn,.small-btn{
+      border:none;
+      border-radius:10px;
+      padding:8px 14px;
+      min-height:44px;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .btn,.small-btn{background:var(--primary);color:#fff;}
+    .pay-btn{background:var(--green);color:#fff;}
+    .done-btn{background:var(--blue);color:#fff;}
+    .delete-btn{background:var(--danger);color:#fff;}
+    .edit-btn{background:var(--orange);color:#fff;}
+    .section{
+      background:var(--card);
+      padding:18px;
+      border-radius:16px;
+      margin-bottom:16px;
+      box-shadow:var(--shadow);
+    }
+    .dashboard{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .stat-card{
+      background:var(--card);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:var(--shadow);
+    }
+    .stat-label{color:var(--muted);font-size:14px;margin-bottom:6px;}
+    .stat-value{font-size:28px;font-weight:900;color:var(--accent);}
+    .start-cash-input,
+    input,select,textarea{
+      width:100%;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #d1d5db;
+      font-size:15px;
+      background:#fff;
+    }
+    textarea{min-height:90px;resize:vertical;}
+    .start-cash-note{margin-top:8px;font-size:12px;color:var(--muted);}
+    .order{
+      border-bottom:1px solid var(--line);
+      padding:12px 0;
+    }
+    .order:last-child{border-bottom:none;}
+    .order-id{font-size:18px;font-weight:800;margin-bottom:6px;}
+    .item-line{font-size:15px;margin:3px 0;}
+    .meta-line{font-size:14px;color:var(--muted);margin:4px 0;}
+    .price{color:var(--accent);font-weight:900;font-size:22px;margin:6px 0;}
+    .action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+    .empty-text{color:#777;font-size:14px;padding:6px 0;}
 
-*{box-sizing:border-box;}
+    .grid-2{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
 
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-}
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:12px;
+    }
+    th,td{
+      text-align:left;
+      padding:10px 8px;
+      border-bottom:1px solid #eee;
+      vertical-align:top;
+      font-size:14px;
+    }
+    th{background:#fafafa;}
 
-.wrap{
-  max-width:1200px;
-  margin:auto;
-  padding:20px;
-}
+    .modal-bg{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      padding:16px;
+    }
+    .modal{
+      width:min(920px,92vw);
+      max-height:90vh;
+      overflow:auto;
+      background:white;
+      border-radius:18px;
+      padding:20px;
+    }
+    .editor-row{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      margin-bottom:12px;
+    }
+    .editor-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .remove-item-btn{background:var(--danger);}
+    .total-box{
+      font-size:22px;
+      font-weight:900;
+      color:var(--accent);
+      margin-top:10px;
+    }
 
-h1{
-  margin:0 0 12px;
-  font-size:28px;
-}
-
-h2{
-  margin:0 0 12px;
-  font-size:22px;
-}
-
-h3{
-  margin:0 0 12px;
-  font-size:22px;
-}
-
-.topbar{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:16px;
-}
-
-.btn,
-.pay-btn,.done-btn,.delete-btn,.edit-btn{
-  border:none;
-  border-radius:10px;
-  padding:8px 14px;
-  min-height:48px;
-  font-size:16px;
-  font-weight:700;
-  cursor:pointer;
-  width:auto;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  text-decoration:none;
-}
-
-.btn{background:var(--primary);color:#fff;}
-.pay-btn{background:var(--green);color:#fff;}
-.done-btn{background:var(--blue);color:#fff;}
-.delete-btn{background:var(--danger);color:#fff;}
-.edit-btn{background:var(--orange);color:#fff;}
-
-.section{
-  background:var(--card);
-  padding:18px;
-  border-radius:16px;
-  margin-bottom:16px;
-  box-shadow:var(--shadow);
-}
-
-.dashboard{
-  display:grid;
-  grid-template-columns:repeat(4, 1fr);
-  gap:12px;
-  margin-bottom:16px;
-}
-
-.stat-card{
-  background:var(--card);
-  border-radius:16px;
-  padding:16px;
-  box-shadow:var(--shadow);
-}
-
-.stat-label{
-  color:var(--muted);
-  font-size:14px;
-  margin-bottom:6px;
-}
-
-.stat-value{
-  font-size:28px;
-  font-weight:900;
-  color:var(--accent);
-}
-
-.start-cash-input{
-  width:100%;
-  padding:10px;
-  border-radius:10px;
-  border:1px solid #d1d5db;
-  font-size:16px;
-  outline:none;
-}
-
-.start-cash-note{
-  margin-top:8px;
-  font-size:12px;
-  color:var(--muted);
-}
-
-.order{
-  border-bottom:1px solid var(--line);
-  padding:12px 0;
-}
-
-.order:last-child{border-bottom:none;}
-
-.order-id{
-  font-size:18px;
-  font-weight:800;
-  margin-bottom:6px;
-}
-
-.item-line{
-  font-size:15px;
-  margin:3px 0;
-}
-
-.meta-line{
-  font-size:14px;
-  color:var(--muted);
-  margin:4px 0;
-}
-
-.price{
-  color:var(--accent);
-  font-weight:900;
-  font-size:22px;
-  margin:6px 0;
-}
-
-.action-row{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:8px;
-}
-
-.modal-bg{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.45);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-  padding:16px;
-}
-
-.modal{
-  width:min(920px,92vw);
-  max-height:90vh;
-  overflow:auto;
-  background:white;
-  border-radius:18px;
-  padding:20px;
-}
-
-.editor-row{
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:12px;
-  margin-bottom:12px;
-}
-
-.editor-row select,.editor-row input,
-.pay-calc input{
-  width:100%;
-  padding:10px;
-  margin:6px 0;
-  font-size:15px;
-  border:1px solid #ccc;
-  border-radius:10px;
-}
-
-.editor-actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:10px;
-}
-
-.small-btn{
-  padding:8px 12px;
-  min-height:44px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  background:var(--primary);
-  color:#fff;
-  font-size:14px;
-  font-weight:700;
-}
-
-.remove-item-btn{background:var(--danger);}
-
-.total-box{
-  font-size:22px;
-  font-weight:900;
-  color:var(--accent);
-  margin-top:10px;
-}
-
-.empty-text{
-  color:#777;
-  font-size:14px;
-  padding:6px 0;
-}
-
-.pay-layout{
-  display:grid;
-  grid-template-columns:minmax(280px, 1fr) 320px;
-  gap:16px;
-  margin-top:12px;
-}
-
-.pay-calc{
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:16px;
-  background:#fafafa;
-}
-
-.pay-label{
-  font-size:14px;
-  color:var(--muted);
-  margin-top:4px;
-}
-
-.pay-big{
-  font-size:28px;
-  font-weight:900;
-  color:var(--accent);
-  margin:4px 0 12px;
-}
-
-.calc-result{
-  font-size:24px;
-  font-weight:900;
-  color:var(--accent);
-  margin:8px 0 12px;
-}
-
-.quick-cash{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:8px;
-  margin-bottom:8px;
-}
-
-.quick-cash button{
-  border:none;
-  border-radius:10px;
-  min-height:44px;
-  padding:8px 12px;
-  font-size:14px;
-  font-weight:700;
-  background:#fff;
-  border:1px solid #ddd;
-  cursor:pointer;
-}
-
-.keypad{
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:12px;
-  background:#fff;
-}
-
-.keypad-grid{
-  display:grid;
-  grid-template-columns:repeat(3, 1fr);
-  gap:8px;
-}
-
-.key-btn{
-  min-height:56px;
-  border:none;
-  border-radius:12px;
-  font-size:22px;
-  font-weight:800;
-  cursor:pointer;
-  background:#f3f4f6;
-}
-
-.key-btn.func{
-  background:#e5e7eb;
-  font-size:16px;
-}
-
-.key-btn.confirm{
-  background:var(--green);
-  color:#fff;
-}
-
-.key-btn.danger{
-  background:var(--danger);
-  color:#fff;
-}
-
-.money-note{
-  color:var(--muted);
-  font-size:13px;
-  margin-top:8px;
-}
-
-@media(max-width:980px){
-  .dashboard{
-    grid-template-columns:repeat(2, 1fr);
-  }
-}
-
-@media(max-width:900px){
-  .pay-layout{
-    grid-template-columns:1fr;
-  }
-}
-
-@media(max-width:760px){
-  .dashboard{
-    grid-template-columns:1fr;
-  }
-
-  .btn,
-  .pay-btn,.done-btn,.delete-btn,.edit-btn{
-    width:100%;
-  }
-}
-</style>
+    @media(max-width:980px){
+      .dashboard{grid-template-columns:repeat(2,1fr);}
+      .grid-2{grid-template-columns:1fr;}
+    }
+    @media(max-width:760px){
+      .dashboard{grid-template-columns:1fr;}
+      .btn,.pay-btn,.done-btn,.delete-btn,.edit-btn,.small-btn{width:100%;}
+    }
+  </style>
 </head>
 <body>
 
@@ -419,6 +230,79 @@ h3{
     <h2>完成（僅今日）</h2>
     <div id="done"></div>
   </div>
+
+  <div class="section">
+    <h2>分類管理</h2>
+    <div class="grid-2">
+      <input id="category-name" placeholder="分類名稱（例如：甜點）">
+      <input id="category-slug" placeholder="slug（例如：dessert）">
+      <input id="category-sort-order" type="number" placeholder="排序">
+      <label style="display:flex; align-items:center; gap:8px;">
+        <input id="category-is-active" type="checkbox" checked style="width:auto;">
+        啟用中
+      </label>
+    </div>
+
+    <div class="editor-actions">
+      <button class="small-btn" onclick="saveCategory()">儲存分類</button>
+      <button class="small-btn" onclick="resetCategoryForm()">清空表單</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>名稱</th>
+          <th>slug</th>
+          <th>排序</th>
+          <th>狀態</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="category-table-body"></tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>商品管理</h2>
+
+    <div class="grid-2">
+      <input id="product-name" placeholder="商品名稱">
+      <select id="product-category"></select>
+      <input id="product-price" type="number" placeholder="一般價格 / 飲料價格">
+      <input id="product-sort-order" type="number" placeholder="排序（越小越前面）">
+      <input id="product-price-square" type="number" placeholder="方形價格（pizza 用）">
+      <input id="product-price-round" type="number" placeholder="圓形價格（pizza 用）">
+      <label style="display:flex; align-items:center; gap:8px;">
+        <input id="product-is-active" type="checkbox" checked style="width:auto;">
+        上架中
+      </label>
+      <div></div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <textarea id="product-description" placeholder="商品描述"></textarea>
+    </div>
+
+    <div class="editor-actions">
+      <button class="small-btn" onclick="saveProduct()">儲存商品</button>
+      <button class="small-btn" onclick="resetProductForm()">清空表單</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>名稱</th>
+          <th>分類</th>
+          <th>價格</th>
+          <th>描述</th>
+          <th>排序</th>
+          <th>狀態</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="product-table-body"></tbody>
+    </table>
+  </div>
 </div>
 
 <div id="modal-bg" class="modal-bg">
@@ -444,57 +328,23 @@ h3{
 <div id="pay-modal-bg" class="modal-bg">
   <div class="modal">
     <h3>收款計算</h3>
-
-    <div class="pay-layout">
-      <div class="pay-calc">
-        <div class="pay-label">訂單金額</div>
-        <div class="pay-big" id="pay-order-total-text">$0</div>
-        <input id="pay-order-total" type="number" readonly />
-
-        <div class="pay-label">實收金額</div>
-        <input id="pay-paid-amount" type="number" placeholder="請輸入收多少" oninput="updateChange()" />
-
-        <div class="quick-cash">
-          <button type="button" onclick="setQuickCash(currentPayTotal)">剛好</button>
-          <button type="button" onclick="setQuickCash(100)">100</button>
-          <button type="button" onclick="setQuickCash(500)">500</button>
-          <button type="button" onclick="setQuickCash(1000)">1000</button>
+    <div class="grid-2">
+      <div>
+        <div class="meta-line">訂單金額</div>
+        <div class="price" id="pay-order-total-text">$0</div>
+        <input id="pay-order-total" type="number" readonly>
+        <div class="meta-line">實收金額</div>
+        <input id="pay-paid-amount" type="number" placeholder="請輸入收多少" oninput="updateChange()">
+        <div class="editor-actions">
+          <button type="button" class="small-btn" onclick="setQuickCash(currentPayTotal)">剛好</button>
+          <button type="button" class="small-btn" onclick="setQuickCash(100)">100</button>
+          <button type="button" class="small-btn" onclick="setQuickCash(500)">500</button>
+          <button type="button" class="small-btn" onclick="setQuickCash(1000)">1000</button>
         </div>
-
-        <div class="calc-result">找零：<span id="pay-change-result">$0</span></div>
-
+        <div class="price">找零：<span id="pay-change-result">$0</span></div>
         <div class="editor-actions">
           <button type="button" class="small-btn" onclick="confirmPay()">確認收款</button>
           <button type="button" class="small-btn" onclick="closePayModal()">取消</button>
-        </div>
-
-        <div class="money-note">今日錢櫃金額 = 開店起始金額 + 今日實收金額 - 今日找零</div>
-      </div>
-
-      <div class="keypad">
-        <div class="pay-label" style="margin-bottom:10px;">數字鍵盤</div>
-        <div class="keypad-grid">
-          <button type="button" class="key-btn" onclick="keypadInput('7')">7</button>
-          <button type="button" class="key-btn" onclick="keypadInput('8')">8</button>
-          <button type="button" class="key-btn" onclick="keypadInput('9')">9</button>
-
-          <button type="button" class="key-btn" onclick="keypadInput('4')">4</button>
-          <button type="button" class="key-btn" onclick="keypadInput('5')">5</button>
-          <button type="button" class="key-btn" onclick="keypadInput('6')">6</button>
-
-          <button type="button" class="key-btn" onclick="keypadInput('1')">1</button>
-          <button type="button" class="key-btn" onclick="keypadInput('2')">2</button>
-          <button type="button" class="key-btn" onclick="keypadInput('3')">3</button>
-
-          <button type="button" class="key-btn func" onclick="keypadClear()">清空</button>
-          <button type="button" class="key-btn" onclick="keypadInput('0')">0</button>
-          <button type="button" class="key-btn danger" onclick="keypadBackspace()">刪除</button>
-
-          <button type="button" class="key-btn func" onclick="setQuickCash(currentPayTotal)">剛好</button>
-          <button type="button" class="key-btn func" onclick="setRoundedCash(100)">補百</button>
-          <button type="button" class="key-btn func" onclick="setRoundedCash(1000)">補千</button>
-
-          <button type="button" class="key-btn confirm" style="grid-column:1 / -1;" onclick="confirmPay()">確認收款</button>
         </div>
       </div>
     </div>
@@ -514,11 +364,15 @@ let currentEditingId = null;
 let currentPayId = null;
 let currentPayTotal = 0;
 let startCash = Number(localStorage.getItem("start_cash") || 0);
+let editingProductId = null;
+let editingCategoryId = null;
+let adminCategories = [];
 
 async function adminFetch(url, options = {}) {
   const finalOptions = {
     ...options,
     headers: {
+      "Content-Type": "application/json",
       ...(options.headers || {}),
       "x-admin-token": ADMIN_TOKEN
     }
@@ -592,7 +446,6 @@ function getTodayStart() {
 
 function updateCashDrawerStats(orders){
   const todayStart = getTodayStart();
-
   const paidTodayOrders = orders.filter(o =>
     (o.createdAt || 0) >= todayStart &&
     o.status !== "deleted" &&
@@ -621,18 +474,9 @@ async function loadOrders(showMessage = false){
 
     const todayStart = getTodayStart();
 
-    const pendingOrders = orders
-      .filter(o => o.status === "pending")
-      .sort((a, b) => a.createdAt - b.createdAt);
-
-    const makingOrders = orders
-      .filter(o => o.status === "making")
-      .sort((a, b) => a.createdAt - b.createdAt);
-
-    const waitingOrders = orders
-      .filter(o => o.status === "waiting")
-      .sort((a, b) => a.createdAt - b.createdAt);
-
+    const pendingOrders = orders.filter(o => o.status === "pending").sort((a, b) => a.createdAt - b.createdAt);
+    const makingOrders = orders.filter(o => o.status === "making").sort((a, b) => a.createdAt - b.createdAt);
+    const waitingOrders = orders.filter(o => o.status === "waiting").sort((a, b) => a.createdAt - b.createdAt);
     const doneOrders = orders
       .filter(o => o.status === "done" && (o.completedAt || 0) >= todayStart)
       .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
@@ -681,38 +525,13 @@ function updateChange(){
   document.getElementById("pay-change-result").innerText = formatMoney(change);
 }
 
-function keypadInput(value){
-  const input = document.getElementById("pay-paid-amount");
-  const current = String(input.value || "");
-  input.value = current + value;
-  updateChange();
-}
-
-function keypadClear(){
-  document.getElementById("pay-paid-amount").value = "";
-  updateChange();
-}
-
-function keypadBackspace(){
-  const input = document.getElementById("pay-paid-amount");
-  input.value = String(input.value || "").slice(0, -1);
-  updateChange();
-}
-
 function setQuickCash(amount){
   document.getElementById("pay-paid-amount").value = Number(amount || 0);
   updateChange();
 }
 
-function setRoundedCash(base){
-  const rounded = Math.ceil(currentPayTotal / base) * base;
-  document.getElementById("pay-paid-amount").value = rounded;
-  updateChange();
-}
-
 async function confirmPay(){
   const paidAmount = Number(document.getElementById("pay-paid-amount").value || 0);
-
   if (!paidAmount || paidAmount < currentPayTotal) {
     alert("收款金額不足");
     return;
@@ -720,7 +539,6 @@ async function confirmPay(){
 
   const res = await adminFetch("/pay/" + currentPayId, {
     method:"POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ paidAmount })
   });
 
@@ -750,7 +568,6 @@ async function deleteOrder(id){
 
   await adminFetch("/delete/" + id, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ reason: finalReason })
   });
 
@@ -773,8 +590,8 @@ function createPizzaRowHtml(item = null){
 
       <label>尺寸</label>
       <select class="pizza-size" onchange="refreshRowPrice(this.closest('.editor-row'))">
-        <option value="方形" ${size === "方形" ? "selected" : ""}>方形 (15×24CM)</option>
-        <option value="圓形" ${size === "圓形" ? "selected" : ""}>圓形 (9吋)</option>
+        <option value="方形" ${size === "方形" ? "selected" : ""}>方形</option>
+        <option value="圓形" ${size === "圓形" ? "selected" : ""}>圓形</option>
       </select>
 
       <label>價格</label>
@@ -812,7 +629,6 @@ function addEditorRow(type, item = null){
   } else {
     list.insertAdjacentHTML("beforeend", createDrinkRowHtml(item));
   }
-
   const rows = list.querySelectorAll(".editor-row");
   const lastRow = rows[rows.length - 1];
   refreshRowPrice(lastRow);
@@ -930,7 +746,6 @@ async function saveEdit(){
 
   const res = await adminFetch("/update-order/" + currentEditingId, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ items, orderType })
   });
 
@@ -944,195 +759,151 @@ async function saveEdit(){
   loadOrders();
 }
 
-loadOrders();
-loadAdminProducts();
-loadAdminCategories();   // 如果你有做分類
-setInterval(loadOrders, 2000);
-</script><script>
-  let editingProductId = null;
+// ===== 商品管理 =====
+function getProductFormData() {
+  return {
+    name: document.getElementById("product-name").value.trim(),
+    category: document.getElementById("product-category").value,
+    description: document.getElementById("product-description").value.trim(),
+    price: document.getElementById("product-price").value,
+    price_square: document.getElementById("product-price-square").value,
+    price_round: document.getElementById("product-price-round").value,
+    sort_order: document.getElementById("product-sort-order").value,
+    is_active: document.getElementById("product-is-active").checked
+  };
+}
 
-  async function adminApiFetch(url, options = {}) {
-    const token = sessionStorage.getItem("admin_auth_token");
-    const res = await fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-token": token,
-        ...(options.headers || {})
-      }
+function resetProductForm() {
+  editingProductId = null;
+  document.getElementById("product-name").value = "";
+  document.getElementById("product-description").value = "";
+  document.getElementById("product-price").value = "";
+  document.getElementById("product-price-square").value = "";
+  document.getElementById("product-price-round").value = "";
+  document.getElementById("product-sort-order").value = "";
+  document.getElementById("product-is-active").checked = true;
+}
+
+async function loadAdminProducts() {
+  try {
+    const res = await adminFetch("/admin/products");
+    const rows = await res.json();
+    const body = document.getElementById("product-table-body");
+
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="7">目前沒有商品</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = rows.map(row => `
+      <tr>
+        <td>${row.name || ""}</td>
+        <td>${row.category || ""}</td>
+        <td>${row.category === "pizza" ? `方 ${row.price_square ?? "-"} / 圓 ${row.price_round ?? "-"}` : `${row.price ?? "-"}`}</td>
+        <td>${row.description || ""}</td>
+        <td>${row.sort_order ?? 0}</td>
+        <td>${row.is_active ? "上架" : "下架"}</td>
+        <td>
+          <button onclick='editProduct(${JSON.stringify(row).replace(/'/g, "&apos;")})'>編輯</button>
+          <button onclick="toggleProduct('${row.id}', ${row.is_active ? "false" : "true"})">${row.is_active ? "下架" : "上架"}</button>
+          <button onclick="deleteProduct('${row.id}')">刪除</button>
+        </td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    console.error("載入商品失敗", err);
+    alert("載入商品失敗");
+  }
+}
+
+function editProduct(row) {
+  editingProductId = row.id;
+  document.getElementById("product-name").value = row.name || "";
+  document.getElementById("product-category").value = row.category || "";
+  document.getElementById("product-description").value = row.description || "";
+  document.getElementById("product-price").value = row.price ?? "";
+  document.getElementById("product-price-square").value = row.price_square ?? "";
+  document.getElementById("product-price-round").value = row.price_round ?? "";
+  document.getElementById("product-sort-order").value = row.sort_order ?? "";
+  document.getElementById("product-is-active").checked = !!row.is_active;
+}
+
+async function saveProduct() {
+  try {
+    const payload = getProductFormData();
+
+    const url = editingProductId
+      ? `/admin/products/${editingProductId}`
+      : "/admin/products";
+
+    const method = editingProductId ? "PUT" : "POST";
+
+    const res = await adminFetch(url, {
+      method,
+      body: JSON.stringify(payload)
     });
 
-    if (res.status === 401) {
-      sessionStorage.removeItem("admin_auth_token");
-      alert("登入逾時，請重新登入");
-      window.location.href = "/admin-login.html";
-      throw new Error("未授權");
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || "儲存失敗");
+      return;
     }
 
-    return res;
+    alert(editingProductId ? "商品已更新" : "商品已新增");
+    resetProductForm();
+    loadAdminProducts();
+  } catch (err) {
+    console.error("儲存商品失敗", err);
+    alert("儲存商品失敗");
   }
+}
 
-  function getProductFormData() {
-    return {
-      name: document.getElementById("product-name").value.trim(),
-      category: document.getElementById("product-category").value,
-      description: document.getElementById("product-description").value.trim(),
-      price: document.getElementById("product-price").value,
-      price_square: document.getElementById("product-price-square").value,
-      price_round: document.getElementById("product-price-round").value,
-      sort_order: document.getElementById("product-sort-order").value,
-      is_active: document.getElementById("product-is-active").checked
-    };
-  }
+async function toggleProduct(id, nextState) {
+  try {
+    const res = await adminFetch(`/admin/products/${id}/toggle`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active: nextState })
+    });
 
-  function resetProductForm() {
-    editingProductId = null;
-    document.getElementById("product-name").value = "";
-    document.getElementById("product-category").value = "pizza";
-    document.getElementById("product-description").value = "";
-    document.getElementById("product-price").value = "";
-    document.getElementById("product-price-square").value = "";
-    document.getElementById("product-price-round").value = "";
-    document.getElementById("product-sort-order").value = "";
-    document.getElementById("product-is-active").checked = true;
-  }
-
-  async function loadAdminProducts() {
-    try {
-      const res = await adminApiFetch("/admin/products");
-      const rows = await res.json();
-      const body = document.getElementById("product-table-body");
-
-      if (!rows.length) {
-        body.innerHTML = `<tr><td colspan="7" style="padding:12px; color:#777;">目前沒有商品</td></tr>`;
-        return;
-      }
-
-      body.innerHTML = rows.map(row => `
-        <tr>
-          <td style="padding:8px; border-bottom:1px solid #eee;">${row.name || ""}</td>
-          <td style="padding:8px; border-bottom:1px solid #eee;">${row.category || ""}</td>
-          <td style="padding:8px; border-bottom:1px solid #eee;">
-            ${row.category === "pizza"
-              ? `方 ${row.price_square ?? "-"} / 圓 ${row.price_round ?? "-"}`
-              : `${row.price ?? "-"}`
-            }
-          </td>
-          <td style="padding:8px; border-bottom:1px solid #eee;">${row.description || ""}</td>
-          <td style="padding:8px; border-bottom:1px solid #eee;">${row.sort_order ?? 0}</td>
-          <td style="padding:8px; border-bottom:1px solid #eee;">${row.is_active ? "上架" : "下架"}</td>
-          <td style="padding:8px; border-bottom:1px solid #eee;">
-            <button onclick='editProduct(${JSON.stringify(row).replace(/'/g, "&apos;")})'>編輯</button>
-            <button onclick="toggleProduct('${row.id}', ${row.is_active ? "false" : "true"})">
-              ${row.is_active ? "下架" : "上架"}
-            </button>
-            <button onclick="deleteProduct('${row.id}')">刪除</button>
-          </td>
-        </tr>
-      `).join("");
-    } catch (err) {
-      console.error("載入商品失敗", err);
-      alert("載入商品失敗");
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || "切換失敗");
+      return;
     }
+
+    loadAdminProducts();
+  } catch (err) {
+    console.error("切換商品狀態失敗", err);
+    alert("切換商品狀態失敗");
   }
+}
 
-  function editProduct(row) {
-    editingProductId = row.id;
-    document.getElementById("product-name").value = row.name || "";
-    document.getElementById("product-category").value = row.category || "pizza";
-    document.getElementById("product-description").value = row.description || "";
-    document.getElementById("product-price").value = row.price ?? "";
-    document.getElementById("product-price-square").value = row.price_square ?? "";
-    document.getElementById("product-price-round").value = row.price_round ?? "";
-    document.getElementById("product-sort-order").value = row.sort_order ?? "";
-    document.getElementById("product-is-active").checked = !!row.is_active;
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-  }
+async function deleteProduct(id) {
+  if (!confirm("確定要刪除這個商品？")) return;
 
-  async function createProduct() {
-    try {
-      const payload = getProductFormData();
+  try {
+    const res = await adminFetch(`/admin/products/${id}`, {
+      method: "DELETE"
+    });
 
-      const url = editingProductId
-        ? `/admin/products/${editingProductId}`
-        : "/admin/products";
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || "刪除失敗");
+      return;
+    }
 
-      const method = editingProductId ? "PUT" : "POST";
-
-      const res = await adminApiFetch(url, {
-        method,
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "儲存失敗");
-        return;
-      }
-
-      alert(editingProductId ? "商品已更新" : "商品已新增");
+    if (editingProductId === id) {
       resetProductForm();
-      loadAdminProducts();
-    } catch (err) {
-      console.error("儲存商品失敗", err);
-      alert("儲存商品失敗");
     }
+
+    loadAdminProducts();
+  } catch (err) {
+    console.error("刪除商品失敗", err);
+    alert("刪除商品失敗");
   }
+}
 
-  async function toggleProduct(id, nextState) {
-    try {
-      const res = await adminApiFetch(`/admin/products/${id}/toggle`, {
-        method: "PATCH",
-        body: JSON.stringify({ is_active: nextState })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "切換失敗");
-        return;
-      }
-
-      loadAdminProducts();
-    } catch (err) {
-      console.error("切換商品狀態失敗", err);
-      alert("切換商品狀態失敗");
-    }
-  }
-
-  async function deleteProduct(id) {
-    if (!confirm("確定要刪除這個商品？")) return;
-
-    try {
-      const res = await adminApiFetch(`/admin/products/${id}`, {
-        method: "DELETE"
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "刪除失敗");
-        return;
-      }
-
-      if (editingProductId === id) {
-        resetProductForm();
-      }
-
-      loadAdminProducts();
-    } catch (err) {
-      console.error("刪除商品失敗", err);
-      alert("刪除商品失敗");
-    }
-  }
-
-  // 頁面載入後呼叫
-  loadAdminProducts();
-</script>
-  let editingCategoryId = null;
-let adminCategories = [];
-
+// ===== 分類管理 =====
 function resetCategoryForm() {
   editingCategoryId = null;
   document.getElementById("category-name").value = "";
@@ -1152,14 +923,13 @@ function getCategoryFormData() {
 
 async function loadAdminCategories() {
   try {
-    const res = await adminApiFetch("/admin/categories");
+    const res = await adminFetch("/admin/categories");
     const rows = await res.json();
     adminCategories = rows || [];
 
     const body = document.getElementById("category-table-body");
     const select = document.getElementById("product-category");
 
-    // 更新商品分類下拉
     if (select) {
       select.innerHTML = adminCategories
         .filter(row => row.is_active)
@@ -1208,13 +978,12 @@ async function saveCategory() {
 
     const method = editingCategoryId ? "PUT" : "POST";
 
-    const res = await adminApiFetch(url, {
+    const res = await adminFetch(url, {
       method,
       body: JSON.stringify(payload)
     });
 
     const data = await res.json();
-
     if (!res.ok) {
       alert(data.error || "儲存失敗");
       return;
@@ -1233,12 +1002,11 @@ async function deleteCategory(id) {
   if (!confirm("確定刪除分類？")) return;
 
   try {
-    const res = await adminApiFetch(`/admin/categories/${id}`, {
+    const res = await adminFetch(`/admin/categories/${id}`, {
       method: "DELETE"
     });
 
     const data = await res.json();
-
     if (!res.ok) {
       alert(data.error || "刪除失敗");
       return;
@@ -1250,81 +1018,12 @@ async function deleteCategory(id) {
     alert("刪除分類失敗");
   }
 }
-<hr style="margin:32px 0;">
 
-<section style="background:#fff; padding:20px; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.08); margin-bottom:24px;">
- <section style="background:#fff; padding:20px; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.08); margin-bottom:24px;">
-  <h2 style="margin-top:0;">分類管理</h2>
+loadOrders();
+loadAdminCategories();
+loadAdminProducts();
+setInterval(loadOrders, 2000);
+</script>
 
-  <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin-bottom:12px;">
-    <input id="category-name" placeholder="分類名稱（例如：甜點）" style="padding:10px;">
-    <input id="category-slug" placeholder="slug（例如：dessert）" style="padding:10px;">
-    <input id="category-sort-order" type="number" placeholder="排序" style="padding:10px;">
-    <label style="display:flex; align-items:center; gap:8px;">
-      <input id="category-is-active" type="checkbox" checked>
-      啟用中
-    </label>
-  </div>
-
-  <div style="display:flex; gap:12px; margin-bottom:18px;">
-    <button onclick="saveCategory()" style="padding:10px 16px;">儲存分類</button>
-    <button onclick="resetCategoryForm()" style="padding:10px 16px;">清空表單</button>
-  </div>
-
-  <table style="width:100%; border-collapse:collapse;">
-    <thead>
-      <tr>
-        <th style="padding:8px;">名稱</th>
-        <th style="padding:8px;">slug</th>
-        <th style="padding:8px;">排序</th>
-        <th style="padding:8px;">狀態</th>
-        <th style="padding:8px;">操作</th>
-      </tr>
-    </thead>
-    <tbody id="category-table-body"></tbody>
-  </table>
-</section>
-  <h2 style="margin-top:0;">商品管理</h2>
-
-  <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin-bottom:16px;">
-    <input id="product-name" placeholder="商品名稱" style="padding:10px;">
-    <select id="product-category" style="padding:10px;">
-      <option value="pizza">Pizza</option>
-      <option value="drink">Drink</option>
-    </select>
-
-    <input id="product-description" placeholder="商品描述" style="padding:10px;">
-    <input id="product-price" type="number" placeholder="一般價格 / 飲料價格" style="padding:10px;">
-
-    <input id="product-price-square" type="number" placeholder="方形價格（pizza 用）" style="padding:10px;">
-    <input id="product-price-round" type="number" placeholder="圓形價格（pizza 用）" style="padding:10px;">
-
-    <input id="product-sort-order" type="number" placeholder="排序（越小越前面）" style="padding:10px;">
-    <label style="display:flex; align-items:center; gap:8px;">
-      <input id="product-is-active" type="checkbox" checked>
-      上架中
-    </label>
-  </div>
-
-  <div style="display:flex; gap:12px; margin-bottom:18px;">
-    <button onclick="createProduct()" style="padding:10px 16px;">新增商品</button>
-    <button onclick="resetProductForm()" style="padding:10px 16px;">清空表單</button>
-  </div>
-
-  <table style="width:100%; border-collapse:collapse;">
-    <thead>
-      <tr>
-        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">名稱</th>
-        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">分類</th>
-        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">價格</th>
-        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">描述</th>
-        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">排序</th>
-        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">狀態</th>
-        <th style="text-align:left; border-bottom:1px solid #ddd; padding:8px;">操作</th>
-      </tr>
-    </thead>
-    <tbody id="product-table-body"></tbody>
-  </table>
-</section>
 </body>
 </html>
