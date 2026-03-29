@@ -404,20 +404,20 @@ app.post("/admin/products", requireAdminToken, async (req, res) => {
       return res.status(400).json({ error: "商品名稱必填" });
     }
 
-    if (!category || !["pizza", "drink"].includes(category)) {
-      return res.status(400).json({ error: "category 只能是 pizza 或 drink" });
-    }
+    if (!category || !String(category).trim()) {
+  return res.status(400).json({ error: "category 必填" });
+}
 
-    const payload = {
-      name: String(name).trim(),
-      category,
-      description: description ? String(description).trim() : "",
-      price: Number(price || 0),
-      price_square: price_square === "" || price_square == null ? null : Number(price_square),
-      price_round: price_round === "" || price_round == null ? null : Number(price_round),
-      is_active: Boolean(is_active),
-      sort_order: Number(sort_order || 0)
-    };
+   const payload = {
+  name: String(name).trim(),
+  category: String(category).trim().toLowerCase(),
+  description: description ? String(description).trim() : "",
+  price: Number(price || 0),
+  price_square: price_square === "" || price_square == null ? null : Number(price_square),
+  price_round: price_round === "" || price_round == null ? null : Number(price_round),
+  is_active: Boolean(is_active),
+  sort_order: Number(sort_order || 0)
+};
 
     const { data, error } = await supabase
       .from("products")
@@ -452,13 +452,13 @@ app.put("/admin/products/:id", requireAdminToken, async (req, res) => {
       return res.status(400).json({ error: "商品名稱必填" });
     }
 
-    if (!category || !["pizza", "drink"].includes(category)) {
-      return res.status(400).json({ error: "category 只能是 pizza 或 drink" });
+    if (!category || !String(category).trim()) {
+      return res.status(400).json({ error: "category 必填" });
     }
 
     const payload = {
       name: String(name).trim(),
-      category,
+      category: String(category).trim().toLowerCase(),
       description: description ? String(description).trim() : "",
       price: Number(price || 0),
       price_square: price_square === "" || price_square == null ? null : Number(price_square),
