@@ -1168,6 +1168,42 @@ loadOrders();
 loadAdminCategories();
 loadAdminProducts();
 setInterval(loadOrders, 2000);
+async function printLabel(orderId){
+  try {
+    const res = await adminFetch("/order/" + orderId);
+    const order = await res.json();
+
+    const text = buildLabelText(order);
+
+    await fetch("http://127.0.0.1:3000/print", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ text })
+    });
+
+    alert("已送出貼紙列印");
+
+  } catch (err) {
+    console.error(err);
+    alert("列印失敗（請確認列印程式有開）");
+  }
+}
+
+function buildLabelText(order){
+  const items = (order.items || [])
+    .map(i => `${i.name} ${i.size || ""}`.trim())
+    .join(" / ");
+
+  return [
+    items,
+    `單號:${order.id}`,
+    `${order.orderType || "內用"}  $${order.price || 0}`,
+    "",
+    ""
+  ].join("\n");
+}
 </script>
 
 </body>
