@@ -334,12 +334,32 @@
         <div class="price" id="pay-order-total-text">$0</div>
         <input id="pay-order-total" type="number" readonly>
         <div class="meta-line">實收金額</div>
-        <input id="pay-paid-amount" type="number" placeholder="請輸入收多少" oninput="updateChange()">
-        <div class="editor-actions">
-          <button type="button" class="small-btn" onclick="setQuickCash(currentPayTotal)">剛好</button>
-          <button type="button" class="small-btn" onclick="setQuickCash(100)">100</button>
-          <button type="button" class="small-btn" onclick="setQuickCash(500)">500</button>
-          <button type="button" class="small-btn" onclick="setQuickCash(1000)">1000</button>
+       <input id="pay-paid-amount" type="text" readonly placeholder="點擊下面鍵盤輸入">
+
+<div id="num-pad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;">
+  <button onclick="numPress(7)">7</button>
+  <button onclick="numPress(8)">8</button>
+  <button onclick="numPress(9)">9</button>
+
+  <button onclick="numPress(4)">4</button>
+  <button onclick="numPress(5)">5</button>
+  <button onclick="numPress(6)">6</button>
+
+  <button onclick="numPress(1)">1</button>
+  <button onclick="numPress(2)">2</button>
+  <button onclick="numPress(3)">3</button>
+
+  <button onclick="numPress(0)">0</button>
+  <button onclick="clearNum()">清除</button>
+  <button onclick="backspace()">←</button>
+</div>
+
+<div style="display:flex;gap:8px;margin-top:10px;">
+  <button onclick="setQuickCash(100)">100</button>
+  <button onclick="setQuickCash(500)">500</button>
+  <button onclick="setQuickCash(1000)">1000</button>
+  <button onclick="setExact()">剛好</button>
+</div>
         </div>
         <div class="price">找零：<span id="pay-change-result">$0</span></div>
         <div class="editor-actions">
