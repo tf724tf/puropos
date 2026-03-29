@@ -700,18 +700,48 @@ app.get("/report/yearly-summary", requireReportToken, async (req, res) => {
 
 app.get("/report/history", requireReportToken, async (req, res) => {
   try {
-    const { sql, params, keyword } = buildHistoryFilter(req.query);
-    const result = await pool.query(sql, params);
-    let rows = result.rows.map(mapOrder);
+    const { keyword, status, month, dateFrom, dateTo } = req.query;
+
+    let query = supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (month) {
+      const range = getMonthRange(month);
+      query = query.gte("created_at", range.startMs).lte("created_at", range.endMs);
+    }
+
+    if (dateFrom) {
+      const start = new Date(dateFrom);
+      start.setHours(0, 0, 0, 0);
+      query = query.gte("created_at", start.getTime());
+    }
+
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      query = query.lte("created_at", end.getTime());
+    }
+
+    if (status) {
+      query = query.eq("status", status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    let rows = (data || []).map(mapOrder);
     rows = filterRowsByKeyword(rows, keyword);
     rows = rows.slice(0, 10);
+
     res.json(rows);
   } catch (err) {
     console.error("歷史訂單查詢失敗:", err);
     res.status(500).json({ error: "歷史訂單查詢失敗" });
   }
 });
-
 app.get("/report/items", requireReportToken, async (req, res) => {
   try {
     const month = req.query.month;
