@@ -1168,14 +1168,15 @@ loadOrders();
 loadAdminCategories();
 loadAdminProducts();
 setInterval(loadOrders, 2000);
-async function printLabel(orderId){
+
+  async function printLabel(orderId){
   try {
     const res = await adminFetch("/order/" + orderId);
     const order = await res.json();
 
     const text = buildLabelText(order);
 
-    await fetch("http://127.0.0.1:3000/print", {
+    const printRes = await fetch("http://127.0.0.1:3000/print", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1183,10 +1184,13 @@ async function printLabel(orderId){
       body: JSON.stringify({ text })
     });
 
-    alert("已送出貼紙列印");
+    if (!printRes.ok) {
+      throw new Error("print failed");
+    }
 
+    alert("貼紙已送出");
   } catch (err) {
-    console.error(err);
+    console.error("列印錯誤", err);
     alert("列印失敗（請確認列印程式有開）");
   }
 }
@@ -1197,7 +1201,7 @@ function buildLabelText(order){
     .join(" / ");
 
   return [
-    items,
+    items || "未命名品項",
     `單號:${order.id}`,
     `${order.orderType || "內用"}  $${order.price || 0}`,
     "",
