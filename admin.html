@@ -945,6 +945,8 @@ async function saveEdit(){
 }
 
 loadOrders();
+loadAdminProducts();
+loadAdminCategories();   // 如果你有做分類
 setInterval(loadOrders, 2000);
 </script><script>
   let editingProductId = null;
