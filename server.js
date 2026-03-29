@@ -1,9 +1,8 @@
-require('dotenv').config();
+require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const { Pool } = require("pg");
 const XLSX = require("xlsx");
 const { createClient } = require("@supabase/supabase-js");
 
@@ -22,64 +21,6 @@ const REPORT_PASSWORD = "7929";
 const ADMIN_PASSWORD = "0101";
 const REPORT_TOKEN = "7929-ok";
 const ADMIN_TOKEN = "0101-ok";
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL
-    ? { rejectUnauthorized: false }
-    : false,
-});
-
-async function initDb() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS orders (
-      id TEXT PRIMARY KEY,
-      items JSONB NOT NULL,
-      price INTEGER NOT NULL DEFAULT 0,
-      order_type TEXT NOT NULL DEFAULT '內用',
-      paid_amount INTEGER NOT NULL DEFAULT 0,
-      change_amount INTEGER NOT NULL DEFAULT 0,
-      status TEXT NOT NULL DEFAULT 'pending',
-      created_at BIGINT NOT NULL,
-      completed_at BIGINT,
-      deleted_at BIGINT,
-      delete_reason TEXT
-    )
-  `);
-
-  const result = await pool.query(`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_name = 'orders'
-  `);
-
-  const cols = result.rows.map((r) => r.column_name);
-
-  if (!cols.includes("completed_at")) {
-    await pool.query(`ALTER TABLE orders ADD COLUMN completed_at BIGINT`);
-  }
-  if (!cols.includes("deleted_at")) {
-    await pool.query(`ALTER TABLE orders ADD COLUMN deleted_at BIGINT`);
-  }
-  if (!cols.includes("delete_reason")) {
-    await pool.query(`ALTER TABLE orders ADD COLUMN delete_reason TEXT`);
-  }
-  if (!cols.includes("order_type")) {
-    await pool.query(
-      `ALTER TABLE orders ADD COLUMN order_type TEXT NOT NULL DEFAULT '內用'`
-    );
-  }
-  if (!cols.includes("paid_amount")) {
-    await pool.query(
-      `ALTER TABLE orders ADD COLUMN paid_amount INTEGER NOT NULL DEFAULT 0`
-    );
-  }
-  if (!cols.includes("change_amount")) {
-    await pool.query(
-      `ALTER TABLE orders ADD COLUMN change_amount INTEGER NOT NULL DEFAULT 0`
-    );
-  }
-}
 
 function mapOrder(row) {
   return {
@@ -208,43 +149,6 @@ function countPizzaFromOrders(rows) {
   return pizzaCount;
 }
 
-function buildHistoryFilter(reqQuery) {
-  const { dateFrom, dateTo, keyword, status, month } = reqQuery;
-
-  let sql = `SELECT * FROM orders WHERE 1=1`;
-  const params = [];
-  let idx = 1;
-
-  if (month) {
-    const range = getMonthRange(month);
-    sql += ` AND created_at >= $${idx++} AND created_at <= $${idx++}`;
-    params.push(range.startMs, range.endMs);
-  }
-
-  if (dateFrom) {
-    const start = new Date(dateFrom);
-    start.setHours(0, 0, 0, 0);
-    sql += ` AND created_at >= $${idx++}`;
-    params.push(start.getTime());
-  }
-
-  if (dateTo) {
-    const end = new Date(dateTo);
-    end.setHours(23, 59, 59, 999);
-    sql += ` AND created_at <= $${idx++}`;
-    params.push(end.getTime());
-  }
-
-  if (status) {
-    sql += ` AND status = $${idx++}`;
-    params.push(status);
-  }
-
-  sql += ` ORDER BY created_at DESC`;
-
-  return { sql, params, keyword };
-}
-
 function filterRowsByKeyword(rows, keyword) {
   if (!keyword) return rows;
 
@@ -328,7 +232,7 @@ app.get("/menu.js", (req, res) => {
   res.sendFile(path.join(__dirname, "menu.js"));
 });
 
-// ===== 新增：從 Supabase 讀商品 =====
+// ===== 商品 API =====
 app.get("/api/products", async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -339,7 +243,7 @@ app.get("/api/products", async (req, res) => {
 
     if (error) throw error;
 
-    res.json(data);
+    res.json(data || []);
   } catch (err) {
     console.error("讀取 products 失敗:", err);
     res.status(500).json({ error: "讀取商品失敗" });
@@ -406,9 +310,7 @@ app.post("/order", async (req, res) => {
         }
       ]);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     res.json({ id });
   } catch (err) {
@@ -456,6 +358,7 @@ app.get("/order/:id", requireAdminToken, async (req, res) => {
     res.status(500).json({ error: "讀取單筆訂單失敗" });
   }
 });
+
 app.post("/pay/:id", requireAdminToken, async (req, res) => {
   try {
     const { paidAmount } = req.body || {};
@@ -737,13 +640,14 @@ app.get("/report/history", requireReportToken, async (req, res) => {
     res.status(500).json({ error: "歷史訂單查詢失敗" });
   }
 });
+
 app.get("/report/items", requireReportToken, async (req, res) => {
   try {
     const month = req.query.month;
 
     let query = supabase
       .from("orders")
-      .select("items")
+      .select("items, created_at")
       .eq("status", "done");
 
     if (month) {
@@ -781,37 +685,33 @@ app.get("/report/items", requireReportToken, async (req, res) => {
     res.status(500).json({ error: "熱銷分析失敗" });
   }
 });
-    const rows = Object.values(map).sort((a, b) => b.qty - a.qty);
-    res.json(rows);
-  } catch (err) {
-    console.error("熱銷分析失敗:", err);
-    res.status(500).json({ error: "熱銷分析失敗" });
-  }
-});
 
 app.get("/report/export", requireReportToken, async (req, res) => {
   try {
     const month = req.query.month;
     const range = getMonthRange(month);
 
-    const result = await pool.query(
-      `SELECT *
-       FROM orders
-       WHERE status = 'done'
-         AND created_at >= $1
-         AND created_at <= $2
-       ORDER BY created_at DESC`,
-      [range.startMs, range.endMs]
-    );
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("status", "done")
+      .gte("created_at", range.startMs)
+      .lte("created_at", range.endMs)
+      .order("created_at", { ascending: false });
 
-    const rows = result.rows.map(mapOrder);
+    if (error) throw error;
+
+    const rows = (data || []).map(mapOrder);
 
     const summaryRows = [{
       月份: range.label,
       訂單數: rows.length,
       Pizza張數: countPizzaFromOrders(rows),
       營業額: rows.reduce((sum, row) => sum + Number(row.price || 0), 0),
-      今日錢櫃應有金額: 0
+      今日錢櫃應有金額: rows.reduce(
+        (sum, row) => sum + (Number(row.paidAmount || 0) - Number(row.changeAmount || 0)),
+        0
+      )
     }];
 
     const dailyMap = {};
@@ -827,6 +727,7 @@ app.get("/report/export", requireReportToken, async (req, res) => {
           錢櫃應有金額: 0
         };
       }
+
       dailyMap[key].訂單數 += 1;
       dailyMap[key].營業額 += Number(order.price || 0);
       dailyMap[key].錢櫃應有金額 += Number(order.paidAmount || 0) - Number(order.changeAmount || 0);
@@ -898,13 +799,6 @@ app.get("/report/export", requireReportToken, async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-initDb()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log("POS running on port " + PORT);
-    });
-  })
-  .catch((err) => {
-    console.error("DB init failed:", err);
-    process.exit(1);
-  });
+app.listen(PORT, () => {
+  console.log("POS running on port " + PORT);
+});
