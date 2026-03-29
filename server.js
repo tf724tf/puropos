@@ -436,24 +436,25 @@ app.get("/orders", requireAdminToken, async (req, res) => {
 
 app.get("/order/:id", requireAdminToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT *
-       FROM orders
-       WHERE id = $1`,
-      [req.params.id]
-    );
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("id", req.params.id)
+      .single();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "找不到訂單" });
+    if (error) {
+      if (error.code === "PGRST116") {
+        return res.status(404).json({ error: "找不到訂單" });
+      }
+      throw error;
     }
 
-    res.json(mapOrder(result.rows[0]));
+    res.json(mapOrder(data));
   } catch (err) {
     console.error("讀取單筆訂單失敗:", err);
     res.status(500).json({ error: "讀取單筆訂單失敗" });
   }
 });
-
 app.post("/pay/:id", requireAdminToken, async (req, res) => {
   try {
     const { paidAmount } = req.body || {};
