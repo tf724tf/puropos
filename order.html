@@ -43,7 +43,7 @@
     .type-tabs,
     .menu-tabs {
       display: grid;
-      gap: 12px;
+      gap: 10px;
     }
 
     .type-tabs {
@@ -60,11 +60,13 @@
     .remove-btn,
     .back-btn {
       border: none;
-      border-radius: 14px;
-      padding: 14px;
-      font-size: 22px;
+      border-radius: 12px;
+      padding: 10px 14px;
+      min-height: 56px;
+      font-size: 18px;
       font-weight: 800;
       cursor: pointer;
+      touch-action: manipulation;
     }
 
     .tab-btn,
@@ -93,7 +95,7 @@
     }
 
     .menu-title {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 900;
       margin-bottom: 6px;
     }
@@ -101,41 +103,43 @@
     .menu-desc {
       color: #666;
       margin-bottom: 12px;
-      font-size: 18px;
+      font-size: 17px;
       line-height: 1.5;
     }
 
     .pizza-size-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 10px;
       margin-top: 10px;
     }
 
     .size-card {
       background: #111;
       color: white;
-      border-radius: 16px;
-      padding: 18px 14px;
+      border-radius: 14px;
+      padding: 12px 10px;
+      min-height: 64px;
       text-align: center;
       cursor: pointer;
       font-weight: 900;
       border: none;
+      touch-action: manipulation;
     }
 
     .size-title {
-      font-size: 24px;
-      margin-bottom: 6px;
+      font-size: 20px;
+      margin-bottom: 4px;
     }
 
     .size-sub {
-      font-size: 15px;
+      font-size: 14px;
       opacity: 0.9;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .size-price {
-      font-size: 28px;
+      font-size: 22px;
       color: #fbbf24;
     }
 
@@ -149,19 +153,20 @@
 
     .drink-price {
       color: #c95a00;
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 900;
     }
 
     .add-btn {
       background: black;
       color: white;
-      font-size: 18px;
-      padding: 12px 18px;
+      font-size: 17px;
+      padding: 10px 16px;
+      min-height: 52px;
     }
 
     .cart-title {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 900;
       margin-bottom: 14px;
     }
@@ -179,12 +184,13 @@
       background: #dc2626;
       color: white;
       font-size: 16px;
-      padding: 10px 14px;
+      padding: 8px 12px;
+      min-height: 48px;
       margin-top: 8px;
     }
 
     .total {
-      font-size: 30px;
+      font-size: 28px;
       font-weight: 900;
       color: #c95a00;
       margin-top: 14px;
@@ -195,6 +201,8 @@
       background: #1f9d55;
       color: white;
       margin-top: 16px;
+      min-height: 58px;
+      font-size: 19px;
     }
 
     .success-box {
@@ -204,7 +212,7 @@
       border-radius: 16px;
       padding: 20px;
       text-align: center;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 800;
       color: #0f7a0f;
       margin-bottom: 20px;
@@ -232,6 +240,30 @@
       .type-tabs,
       .menu-tabs {
         grid-template-columns: 1fr;
+      }
+
+      .logo {
+        font-size: 36px;
+      }
+
+      .sub {
+        font-size: 18px;
+      }
+
+      .menu-title {
+        font-size: 20px;
+      }
+
+      .menu-desc {
+        font-size: 16px;
+      }
+
+      .tab-btn,
+      .add-btn,
+      .submit-btn,
+      .remove-btn,
+      .back-btn {
+        font-size: 17px;
       }
     }
   </style>
