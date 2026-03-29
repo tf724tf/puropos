@@ -388,11 +388,27 @@ app.post("/order", async (req, res) => {
 
     const id = "A" + Date.now().toString().slice(-4);
 
-    await pool.query(
-      `INSERT INTO orders (id, items, price, order_type, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [id, JSON.stringify(items), Number(price || 0), orderType, "pending", Date.now()]
-    );
+    const { error } = await supabase
+      .from("orders")
+      .insert([
+        {
+          id,
+          items,
+          price: Number(price || 0),
+          order_type: orderType,
+          status: "pending",
+          created_at: Date.now(),
+          paid_amount: 0,
+          change_amount: 0,
+          completed_at: null,
+          deleted_at: null,
+          delete_reason: null
+        }
+      ]);
+
+    if (error) {
+      throw error;
+    }
 
     res.json({ id });
   } catch (err) {
