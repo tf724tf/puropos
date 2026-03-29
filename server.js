@@ -281,6 +281,10 @@ async function summaryByRange(startMs, endMs, labelKey, labelValue) {
   );
 
   const rows = result.rows.map(mapOrder);
+  ...
+}
+
+  const rows = result.rows.map(mapOrder);
   const orderCount = rows.length;
   const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
   const pizzaCount = countPizzaFromOrders(rows);
