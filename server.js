@@ -420,14 +420,15 @@ app.post("/order", async (req, res) => {
 // ===== 後台 API（要 0101）=====
 app.get("/orders", requireAdminToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT *
-       FROM orders
-       WHERE status <> 'deleted'
-       ORDER BY created_at DESC`
-    );
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .neq("status", "deleted")
+      .order("created_at", { ascending: false });
 
-    res.json(result.rows.map(mapOrder));
+    if (error) throw error;
+
+    res.json((data || []).map(mapOrder));
   } catch (err) {
     console.error("讀取訂單失敗:", err);
     res.status(500).json({ error: "讀取訂單失敗" });
