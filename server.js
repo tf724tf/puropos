@@ -249,6 +249,124 @@ app.get("/api/products", async (req, res) => {
     res.status(500).json({ error: "讀取商品失敗" });
   }
 });
+// ===== 分類 API（公開給前台讀）=====
+app.get("/api/categories", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+
+    res.json(data || []);
+  } catch (err) {
+    console.error("讀取分類失敗:", err);
+    res.status(500).json({ error: "讀取分類失敗" });
+  }
+});
+
+// ===== 後台分類管理 API =====
+app.get("/admin/categories", requireAdminToken, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+
+    res.json(data || []);
+  } catch (err) {
+    console.error("讀取後台分類失敗:", err);
+    res.status(500).json({ error: "讀取後台分類失敗" });
+  }
+});
+
+app.post("/admin/categories", requireAdminToken, async (req, res) => {
+  try {
+    const { name, slug, sort_order, is_active } = req.body || {};
+
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: "分類名稱必填" });
+    }
+
+    if (!slug || !String(slug).trim()) {
+      return res.status(400).json({ error: "slug 必填" });
+    }
+
+    const payload = {
+      name: String(name).trim(),
+      slug: String(slug).trim().toLowerCase(),
+      sort_order: Number(sort_order || 0),
+      is_active: Boolean(is_active)
+    };
+
+    const { data, error } = await supabase
+      .from("categories")
+      .insert([payload])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ success: true, category: data });
+  } catch (err) {
+    console.error("新增分類失敗:", err);
+    res.status(500).json({ error: "新增分類失敗" });
+  }
+});
+
+app.put("/admin/categories/:id", requireAdminToken, async (req, res) => {
+  try {
+    const { name, slug, sort_order, is_active } = req.body || {};
+
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: "分類名稱必填" });
+    }
+
+    if (!slug || !String(slug).trim()) {
+      return res.status(400).json({ error: "slug 必填" });
+    }
+
+    const payload = {
+      name: String(name).trim(),
+      slug: String(slug).trim().toLowerCase(),
+      sort_order: Number(sort_order || 0),
+      is_active: Boolean(is_active)
+    };
+
+    const { error } = await supabase
+      .from("categories")
+      .update(payload)
+      .eq("id", req.params.id);
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("修改分類失敗:", err);
+    res.status(500).json({ error: "修改分類失敗" });
+  }
+});
+
+app.delete("/admin/categories/:id", requireAdminToken, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from("categories")
+      .delete()
+      .eq("id", req.params.id);
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("刪除分類失敗:", err);
+    res.status(500).json({ error: "刪除分類失敗" });
+  }
+});
+
 // ===== 後台商品管理 API（要 0101）=====
 
 // 讀全部商品（含未上架）
