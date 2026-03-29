@@ -190,6 +190,41 @@
   transform:scale(0.95);
   background:#333;
 }
+    /* 快捷金額（100/500/1000/剛好） */
+.pay-quick-row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+  margin-top:16px;
+}
+
+.pay-quick-row button{
+  min-height:80px;
+  font-size:26px;
+  font-weight:900;
+  border:none;
+  border-radius:18px;
+  background:#16a34a; /* 綠色 */
+  color:#fff;
+  width:100%;
+}
+
+/* 收款 / 取消按鈕 */
+.pay-action-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-top:20px;
+}
+
+.pay-action-row button{
+  min-height:90px;
+  font-size:30px;
+  font-weight:900;
+  border:none;
+  border-radius:18px;
+  width:100%;
+}
 </style>
 </head>
 <body>
