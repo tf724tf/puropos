@@ -1,25 +1,22 @@
 require('dotenv').config();
-const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
 
-const app = express();
-app.use(express.json());
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const { Pool } = require("pg");
 const XLSX = require("xlsx");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const REPORT_PASSWORD = "7929";
 const ADMIN_PASSWORD = "0101";
@@ -302,7 +299,11 @@ async function summaryByRange(startMs, endMs, labelKey, labelValue) {
   };
 }
 
-// ===== 登入頁 =====
+// ===== 頁面 =====
+app.get("/", (req, res) => {
+  res.redirect("/admin-login.html");
+});
+
 app.get("/admin-login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "admin-login.html"));
 });
@@ -311,6 +312,41 @@ app.get("/report-login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "report-login.html"));
 });
 
+app.get("/admin.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.get("/report.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "report.html"));
+});
+
+app.get("/order.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "order.html"));
+});
+
+app.get("/menu.js", (req, res) => {
+  res.sendFile(path.join(__dirname, "menu.js"));
+});
+
+// ===== 新增：從 Supabase 讀商品 =====
+app.get("/api/products", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (err) {
+    console.error("讀取 products 失敗:", err);
+    res.status(500).json({ error: "讀取商品失敗" });
+  }
+});
+
+// ===== 登入 API =====
 app.post("/admin-login", (req, res) => {
   const { password } = req.body || {};
 
@@ -335,27 +371,6 @@ app.post("/report-login", (req, res) => {
     success: true,
     token: REPORT_TOKEN,
   });
-});
-
-// ===== 頁面 =====
-app.get("/", (req, res) => {
-  res.redirect("/admin-login.html");
-});
-
-app.get("/admin.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "admin.html"));
-});
-
-app.get("/report.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "report.html"));
-});
-
-app.get("/order.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "order.html"));
-});
-
-app.get("/menu.js", (req, res) => {
-  res.sendFile(path.join(__dirname, "menu.js"));
 });
 
 // ===== 客人公開 API =====
