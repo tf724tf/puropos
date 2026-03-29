@@ -615,13 +615,15 @@ app.get("/report/overview", requireReportToken, async (req, res) => {
     const yesterday = getYesterdayRange();
     const month = getMonthRange();
 
-    const all = await pool.query(
-      `SELECT *
-       FROM orders
-       WHERE status = 'done'
-       ORDER BY created_at DESC`
-    );
-    const allRows = all.rows.map(mapOrder);
+    const { data: allData, error: allError } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("status", "done")
+      .order("created_at", { ascending: false });
+
+    if (allError) throw allError;
+
+    const allRows = (allData || []).map(mapOrder);
 
     const todaySummary = await summaryByRange(today.startMs, today.endMs, "label", today.label);
     const yesterdaySummary = await summaryByRange(yesterday.startMs, yesterday.endMs, "label", yesterday.label);
@@ -652,6 +654,11 @@ app.get("/report/overview", requireReportToken, async (req, res) => {
         cashInDrawer: 0
       }
     });
+  } catch (err) {
+    console.error("累計摘要失敗:", err);
+    res.status(500).json({ error: "累計摘要失敗" });
+  }
+});
   } catch (err) {
     console.error("累計摘要失敗:", err);
     res.status(500).json({ error: "累計摘要失敗" });
