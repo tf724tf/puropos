@@ -549,7 +549,27 @@ function setQuickCash(amount){
   document.getElementById("pay-paid-amount").value = Number(amount || 0);
   updateChange();
 }
+function numPress(n){
+  const input = document.getElementById("pay-paid-amount");
+  input.value = String(input.value || "") + String(n);
+  updateChange();
+}
 
+function clearNum(){
+  document.getElementById("pay-paid-amount").value = "";
+  updateChange();
+}
+
+function backspace(){
+  const input = document.getElementById("pay-paid-amount");
+  input.value = String(input.value || "").slice(0, -1);
+  updateChange();
+}
+
+function setExact(){
+  document.getElementById("pay-paid-amount").value = String(currentPayTotal || 0);
+  updateChange();
+}
 async function confirmPay(){
   const paidAmount = Number(document.getElementById("pay-paid-amount").value || 0);
   if (!paidAmount || paidAmount < currentPayTotal) {
