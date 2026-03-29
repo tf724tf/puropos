@@ -1,3 +1,14 @@
+require('dotenv').config();
+const express = require('express');
+const { createClient } = require('@supabase/supabase-js');
+
+const app = express();
+app.use(express.json());
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
