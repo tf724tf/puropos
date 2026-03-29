@@ -459,16 +459,20 @@ app.post("/pay/:id", requireAdminToken, async (req, res) => {
   try {
     const { paidAmount } = req.body || {};
 
-    const orderResult = await pool.query(
-      `SELECT * FROM orders WHERE id = $1`,
-      [req.params.id]
-    );
+    const { data: orderData, error: orderError } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("id", req.params.id)
+      .single();
 
-    if (orderResult.rows.length === 0) {
-      return res.status(404).json({ error: "找不到訂單" });
+    if (orderError) {
+      if (orderError.code === "PGRST116") {
+        return res.status(404).json({ error: "找不到訂單" });
+      }
+      throw orderError;
     }
 
-    const order = mapOrder(orderResult.rows[0]);
+    const order = mapOrder(orderData);
     const paid = Number(paidAmount || 0);
 
     if (Number.isNaN(paid) || paid < order.price) {
@@ -477,23 +481,26 @@ app.post("/pay/:id", requireAdminToken, async (req, res) => {
 
     const changeAmount = paid - order.price;
 
-    const countResult = await pool.query(
-      `SELECT COUNT(*)::int AS count
-       FROM orders
-       WHERE status = 'making'`
-    );
+    const { data: makingOrders, error: makingError } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("status", "making");
 
-    const makingCount = countResult.rows[0].count;
+    if (makingError) throw makingError;
+
+    const makingCount = (makingOrders || []).length;
     const nextStatus = makingCount < 4 ? "making" : "waiting";
 
-    await pool.query(
-      `UPDATE orders
-       SET status = $1,
-           paid_amount = $2,
-           change_amount = $3
-       WHERE id = $4`,
-      [nextStatus, paid, changeAmount, req.params.id]
-    );
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({
+        status: nextStatus,
+        paid_amount: paid,
+        change_amount: changeAmount
+      })
+      .eq("id", req.params.id);
+
+    if (updateError) throw updateError;
 
     res.json({ success: true, paidAmount: paid, changeAmount });
   } catch (err) {
