@@ -270,21 +270,17 @@ function requireAdminToken(req, res, next) {
 }
 
 async function summaryByRange(startMs, endMs, labelKey, labelValue) {
-  const result = await pool.query(
-    `SELECT *
-     FROM orders
-     WHERE status = 'done'
-       AND created_at >= $1
-       AND created_at <= $2
-     ORDER BY created_at DESC`,
-    [startMs, endMs]
-  );
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("status", "done")
+    .gte("created_at", startMs)
+    .lte("created_at", endMs)
+    .order("created_at", { ascending: false });
 
-  const rows = result.rows.map(mapOrder);
-  ...
-}
+  if (error) throw error;
 
-  const rows = result.rows.map(mapOrder);
+  const rows = (data || []).map(mapOrder);
   const orderCount = rows.length;
   const total = rows.reduce((sum, row) => sum + Number(row.price || 0), 0);
   const pizzaCount = countPizzaFromOrders(rows);
