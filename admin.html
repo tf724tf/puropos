@@ -1128,9 +1128,160 @@ setInterval(loadOrders, 2000);
   // 頁面載入後呼叫
   loadAdminProducts();
 </script>
+  let editingCategoryId = null;
+let adminCategories = [];
+
+function resetCategoryForm() {
+  editingCategoryId = null;
+  document.getElementById("category-name").value = "";
+  document.getElementById("category-slug").value = "";
+  document.getElementById("category-sort-order").value = "";
+  document.getElementById("category-is-active").checked = true;
+}
+
+function getCategoryFormData() {
+  return {
+    name: document.getElementById("category-name").value.trim(),
+    slug: document.getElementById("category-slug").value.trim().toLowerCase(),
+    sort_order: document.getElementById("category-sort-order").value,
+    is_active: document.getElementById("category-is-active").checked
+  };
+}
+
+async function loadAdminCategories() {
+  try {
+    const res = await adminApiFetch("/admin/categories");
+    const rows = await res.json();
+    adminCategories = rows || [];
+
+    const body = document.getElementById("category-table-body");
+    const select = document.getElementById("product-category");
+
+    // 更新商品分類下拉
+    if (select) {
+      select.innerHTML = adminCategories
+        .filter(row => row.is_active)
+        .map(row => `<option value="${row.slug}">${row.name}</option>`)
+        .join("");
+    }
+
+    if (!adminCategories.length) {
+      body.innerHTML = `<tr><td colspan="5">目前沒有分類</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = adminCategories.map(row => `
+      <tr>
+        <td>${row.name}</td>
+        <td>${row.slug}</td>
+        <td>${row.sort_order ?? 0}</td>
+        <td>${row.is_active ? "啟用" : "停用"}</td>
+        <td>
+          <button onclick='editCategory(${JSON.stringify(row).replace(/'/g, "&apos;")})'>編輯</button>
+          <button onclick="deleteCategory('${row.id}')">刪除</button>
+        </td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    console.error("載入分類失敗", err);
+    alert("載入分類失敗");
+  }
+}
+
+function editCategory(row) {
+  editingCategoryId = row.id;
+  document.getElementById("category-name").value = row.name || "";
+  document.getElementById("category-slug").value = row.slug || "";
+  document.getElementById("category-sort-order").value = row.sort_order ?? "";
+  document.getElementById("category-is-active").checked = !!row.is_active;
+}
+
+async function saveCategory() {
+  try {
+    const payload = getCategoryFormData();
+
+    const url = editingCategoryId
+      ? `/admin/categories/${editingCategoryId}`
+      : "/admin/categories";
+
+    const method = editingCategoryId ? "PUT" : "POST";
+
+    const res = await adminApiFetch(url, {
+      method,
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "儲存失敗");
+      return;
+    }
+
+    alert(editingCategoryId ? "分類已更新" : "分類已新增");
+    resetCategoryForm();
+    loadAdminCategories();
+  } catch (err) {
+    console.error("儲存分類失敗", err);
+    alert("儲存分類失敗");
+  }
+}
+
+async function deleteCategory(id) {
+  if (!confirm("確定刪除分類？")) return;
+
+  try {
+    const res = await adminApiFetch(`/admin/categories/${id}`, {
+      method: "DELETE"
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "刪除失敗");
+      return;
+    }
+
+    loadAdminCategories();
+  } catch (err) {
+    console.error("刪除分類失敗", err);
+    alert("刪除分類失敗");
+  }
+}
 <hr style="margin:32px 0;">
 
 <section style="background:#fff; padding:20px; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.08); margin-bottom:24px;">
+ <section style="background:#fff; padding:20px; border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,0.08); margin-bottom:24px;">
+  <h2 style="margin-top:0;">分類管理</h2>
+
+  <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin-bottom:12px;">
+    <input id="category-name" placeholder="分類名稱（例如：甜點）" style="padding:10px;">
+    <input id="category-slug" placeholder="slug（例如：dessert）" style="padding:10px;">
+    <input id="category-sort-order" type="number" placeholder="排序" style="padding:10px;">
+    <label style="display:flex; align-items:center; gap:8px;">
+      <input id="category-is-active" type="checkbox" checked>
+      啟用中
+    </label>
+  </div>
+
+  <div style="display:flex; gap:12px; margin-bottom:18px;">
+    <button onclick="saveCategory()" style="padding:10px 16px;">儲存分類</button>
+    <button onclick="resetCategoryForm()" style="padding:10px 16px;">清空表單</button>
+  </div>
+
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr>
+        <th style="padding:8px;">名稱</th>
+        <th style="padding:8px;">slug</th>
+        <th style="padding:8px;">排序</th>
+        <th style="padding:8px;">狀態</th>
+        <th style="padding:8px;">操作</th>
+      </tr>
+    </thead>
+    <tbody id="category-table-body"></tbody>
+  </table>
+</section>
   <h2 style="margin-top:0;">商品管理</h2>
 
   <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; margin-bottom:16px;">
