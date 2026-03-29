@@ -249,6 +249,155 @@ app.get("/api/products", async (req, res) => {
     res.status(500).json({ error: "讀取商品失敗" });
   }
 });
+// ===== 後台商品管理 API（要 0101）=====
+
+// 讀全部商品（含未上架）
+app.get("/admin/products", requireAdminToken, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("sort_order", { ascending: true });
+
+    if (error) throw error;
+
+    res.json(data || []);
+  } catch (err) {
+    console.error("讀取後台商品失敗:", err);
+    res.status(500).json({ error: "讀取後台商品失敗" });
+  }
+});
+
+// 新增商品
+app.post("/admin/products", requireAdminToken, async (req, res) => {
+  try {
+    const {
+      name,
+      category,
+      description,
+      price,
+      price_square,
+      price_round,
+      is_active,
+      sort_order
+    } = req.body || {};
+
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: "商品名稱必填" });
+    }
+
+    if (!category || !["pizza", "drink"].includes(category)) {
+      return res.status(400).json({ error: "category 只能是 pizza 或 drink" });
+    }
+
+    const payload = {
+      name: String(name).trim(),
+      category,
+      description: description ? String(description).trim() : "",
+      price: Number(price || 0),
+      price_square: price_square === "" || price_square == null ? null : Number(price_square),
+      price_round: price_round === "" || price_round == null ? null : Number(price_round),
+      is_active: Boolean(is_active),
+      sort_order: Number(sort_order || 0)
+    };
+
+    const { data, error } = await supabase
+      .from("products")
+      .insert([payload])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ success: true, product: data });
+  } catch (err) {
+    console.error("新增商品失敗:", err);
+    res.status(500).json({ error: "新增商品失敗" });
+  }
+});
+
+// 修改商品
+app.put("/admin/products/:id", requireAdminToken, async (req, res) => {
+  try {
+    const {
+      name,
+      category,
+      description,
+      price,
+      price_square,
+      price_round,
+      is_active,
+      sort_order
+    } = req.body || {};
+
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: "商品名稱必填" });
+    }
+
+    if (!category || !["pizza", "drink"].includes(category)) {
+      return res.status(400).json({ error: "category 只能是 pizza 或 drink" });
+    }
+
+    const payload = {
+      name: String(name).trim(),
+      category,
+      description: description ? String(description).trim() : "",
+      price: Number(price || 0),
+      price_square: price_square === "" || price_square == null ? null : Number(price_square),
+      price_round: price_round === "" || price_round == null ? null : Number(price_round),
+      is_active: Boolean(is_active),
+      sort_order: Number(sort_order || 0)
+    };
+
+    const { error } = await supabase
+      .from("products")
+      .update(payload)
+      .eq("id", req.params.id);
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("修改商品失敗:", err);
+    res.status(500).json({ error: "修改商品失敗" });
+  }
+});
+
+// 刪除商品
+app.delete("/admin/products/:id", requireAdminToken, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", req.params.id);
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("刪除商品失敗:", err);
+    res.status(500).json({ error: "刪除商品失敗" });
+  }
+});
+
+// 快速上下架
+app.patch("/admin/products/:id/toggle", requireAdminToken, async (req, res) => {
+  try {
+    const { is_active } = req.body || {};
+
+    const { error } = await supabase
+      .from("products")
+      .update({ is_active: Boolean(is_active) })
+      .eq("id", req.params.id);
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("切換商品狀態失敗:", err);
+    res.status(500).json({ error: "切換商品狀態失敗" });
+  }
+});
 
 // ===== 登入 API =====
 app.post("/admin-login", (req, res) => {
