@@ -5,67 +5,190 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PURO POS 後台</title>
 <style>
-body{font-family:sans-serif;margin:0;background:#f5f5f5;}
-.wrap{max-width:1200px;margin:auto;padding:20px;}
-h1{margin:0 0 10px;}
-.topbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;}
-
-.btn{
-  padding:8px 12px;
-  min-height:48px;
-  border-radius:10px;
-  border:none;
-  background:black;
-  color:white;
-  cursor:pointer;
-  font-size:16px;
-  font-weight:700;
+:root{
+  --bg:#f6f4ef;
+  --card:#ffffff;
+  --text:#1f1f1f;
+  --muted:#6b7280;
+  --line:#e5e7eb;
+  --primary:#111111;
+  --green:#1f9d55;
+  --blue:#2563eb;
+  --orange:#f59e0b;
+  --danger:#dc2626;
+  --accent:#c95a00;
+  --shadow:0 8px 24px rgba(0,0,0,0.06);
 }
 
-.section{background:white;padding:20px;border-radius:16px;margin-bottom:18px;}
-.order{border-bottom:1px solid #eee;padding:14px 0;}
-.order:last-child{border-bottom:none;}
-.order-id{font-size:20px;font-weight:800;margin-bottom:8px;}
-.item-line{margin:4px 0;font-size:16px;}
-.meta-line{font-size:15px;color:#555;margin:6px 0;}
-.price{color:#c95a00;font-weight:bold;font-size:24px;margin:10px 0;}
-.action-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+*{box-sizing:border-box;}
 
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.wrap{
+  max-width:1200px;
+  margin:auto;
+  padding:20px;
+}
+
+h1{
+  margin:0 0 12px;
+  font-size:28px;
+}
+
+h2{
+  margin:0 0 12px;
+  font-size:22px;
+}
+
+.topbar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+
+.btn,
 .pay-btn,.done-btn,.delete-btn,.edit-btn{
   border:none;
   border-radius:10px;
-  cursor:pointer;
-  min-width:120px;
+  padding:8px 14px;
   min-height:48px;
-  padding:8px 12px;
   font-size:16px;
   font-weight:700;
+  cursor:pointer;
+  width:auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
 }
 
-.pay-btn{background:#1f9d55;color:white;}
-.done-btn{background:#2563eb;color:white;}
-.delete-btn{background:#dc2626;color:white;}
-.edit-btn{background:#f59e0b;color:white;}
+.btn{background:var(--primary);color:#fff;}
+.pay-btn{background:var(--green);color:#fff;}
+.done-btn{background:var(--blue);color:#fff;}
+.delete-btn{background:var(--danger);color:#fff;}
+.edit-btn{background:var(--orange);color:#fff;}
+
+.section{
+  background:var(--card);
+  padding:18px;
+  border-radius:16px;
+  margin-bottom:16px;
+  box-shadow:var(--shadow);
+}
+
+.dashboard{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:12px;
+  margin-bottom:16px;
+}
+
+.stat-card{
+  background:var(--card);
+  border-radius:16px;
+  padding:16px;
+  box-shadow:var(--shadow);
+}
+
+.stat-label{
+  color:var(--muted);
+  font-size:14px;
+  margin-bottom:6px;
+}
+
+.stat-value{
+  font-size:28px;
+  font-weight:900;
+  color:var(--accent);
+}
+
+.order{
+  border-bottom:1px solid var(--line);
+  padding:12px 0;
+}
+
+.order:last-child{border-bottom:none;}
+
+.order-id{
+  font-size:18px;
+  font-weight:800;
+  margin-bottom:6px;
+}
+
+.item-line{
+  font-size:15px;
+  margin:3px 0;
+}
+
+.meta-line{
+  font-size:14px;
+  color:var(--muted);
+  margin:4px 0;
+}
+
+.price{
+  color:var(--accent);
+  font-weight:900;
+  font-size:22px;
+  margin:6px 0;
+}
+
+.action-row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
 
 .modal-bg{
-  position:fixed;inset:0;background:rgba(0,0,0,0.45);
-  display:none;align-items:center;justify-content:center;z-index:9999;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  padding:16px;
 }
 
 .modal{
-  width:min(900px,92vw);max-height:90vh;overflow:auto;
-  background:white;border-radius:18px;padding:20px;
+  width:min(920px,92vw);
+  max-height:90vh;
+  overflow:auto;
+  background:white;
+  border-radius:18px;
+  padding:20px;
 }
 
 .editor-row{
-  border:1px solid #ddd;border-radius:12px;padding:12px;margin-bottom:12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:12px;
 }
 
-.editor-row select,.editor-row input{
-  width:100%;padding:10px;margin:6px 0;font-size:16px;border:1px solid #ccc;border-radius:10px;box-sizing:border-box;
+.editor-row select,.editor-row input,
+.pay-calc input{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  font-size:15px;
+  border:1px solid #ccc;
+  border-radius:10px;
 }
 
-.editor-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.editor-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
 
 .small-btn{
   padding:8px 12px;
@@ -73,45 +196,136 @@ h1{margin:0 0 10px;}
   border:none;
   border-radius:10px;
   cursor:pointer;
-  background:black;
-  color:white;
-  font-size:15px;
+  background:var(--primary);
+  color:#fff;
+  font-size:14px;
   font-weight:700;
 }
 
-.remove-item-btn{background:#dc2626;}
-.total-box{font-size:24px;font-weight:900;color:#c95a00;margin-top:12px;}
-.empty-text{color:#777;font-size:16px;padding:8px 0;}
+.remove-item-btn{background:var(--danger);}
+
+.total-box{
+  font-size:22px;
+  font-weight:900;
+  color:var(--accent);
+  margin-top:10px;
+}
+
+.empty-text{
+  color:#777;
+  font-size:14px;
+  padding:6px 0;
+}
+
+.pay-layout{
+  display:grid;
+  grid-template-columns: minmax(280px, 1fr) 320px;
+  gap:16px;
+  margin-top:12px;
+}
 
 .pay-calc{
-  border:1px solid #ddd;
-  border-radius:12px;
-  padding:14px;
-  margin-top:12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:16px;
   background:#fafafa;
 }
 
-.pay-calc input, .pay-calc select{
-  width:100%;
-  box-sizing:border-box;
-  padding:10px;
+.pay-label{
+  font-size:14px;
+  color:var(--muted);
+  margin-top:4px;
+}
+
+.pay-big{
+  font-size:28px;
+  font-weight:900;
+  color:var(--accent);
+  margin:4px 0 12px;
+}
+
+.calc-result{
+  font-size:24px;
+  font-weight:900;
+  color:var(--accent);
+  margin:8px 0 12px;
+}
+
+.quick-cash{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
   margin-top:8px;
-  margin-bottom:12px;
-  font-size:16px;
-  border:1px solid #ccc;
+  margin-bottom:8px;
+}
+
+.quick-cash button{
+  border:none;
   border-radius:10px;
+  min-height:44px;
+  padding:8px 12px;
+  font-size:14px;
+  font-weight:700;
+  background:#fff;
+  border:1px solid #ddd;
+  cursor:pointer;
 }
 
-.pay-calc .calc-result{
-  font-size:20px;
+.keypad{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  background:#fff;
+}
+
+.keypad-grid{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:8px;
+}
+
+.key-btn{
+  min-height:56px;
+  border:none;
+  border-radius:12px;
+  font-size:22px;
   font-weight:800;
-  color:#c95a00;
-  margin-bottom:12px;
+  cursor:pointer;
+  background:#f3f4f6;
 }
 
-@media (max-width:700px){
-  .wrap{padding:14px;}
-  .section{padding:16px;}
+.key-btn.func{
+  background:#e5e7eb;
+  font-size:16px;
+}
+
+.key-btn.confirm{
+  background:var(--green);
+  color:#fff;
+}
+
+.key-btn.danger{
+  background:var(--danger);
+  color:#fff;
+}
+
+.money-note{
+  color:var(--muted);
+  font-size:13px;
+  margin-top:8px;
+}
+
+@media(max-width:900px){
+  .pay-layout{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:760px){
+  .dashboard{
+    grid-template-columns:1fr;
+  }
+
   .btn,
   .pay-btn,.done-btn,.delete-btn,.edit-btn{
     width:100%;
@@ -125,11 +339,26 @@ h1{margin:0 0 10px;}
   <div class="topbar">
     <button type="button" class="btn" onclick="logout()">登出</button>
     <button type="button" class="btn" onclick="loadOrders(true)">刷新</button>
-    <a href="/order.html" target="_blank"><button type="button" class="btn">客人點餐頁</button></a>
-    <a href="/report.html" target="_blank"><button type="button" class="btn">銷售報表</button></a>
+    <a href="/order.html" target="_blank" class="btn">客人點餐頁</a>
+    <a href="/report.html" target="_blank" class="btn">銷售報表</a>
   </div>
 
   <h1>PURO POS 後台</h1>
+
+  <div class="dashboard">
+    <div class="stat-card">
+      <div class="stat-label">今日錢櫃金額</div>
+      <div class="stat-value" id="cash-drawer-total">$0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">今日已收款訂單</div>
+      <div class="stat-value" id="paid-order-count">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">今日已收現金總額</div>
+      <div class="stat-value" id="paid-amount-total">$0</div>
+    </div>
+  </div>
 
   <div class="section">
     <h2>未收款</h2>
@@ -175,18 +404,58 @@ h1{margin:0 0 10px;}
 <div id="pay-modal-bg" class="modal-bg">
   <div class="modal">
     <h3>收款計算</h3>
-    <div class="pay-calc">
-      <div>訂單金額</div>
-      <input id="pay-order-total" type="number" readonly />
 
-      <div>實收金額</div>
-      <input id="pay-paid-amount" type="number" placeholder="請輸入收多少" oninput="updateChange()" />
+    <div class="pay-layout">
+      <div class="pay-calc">
+        <div class="pay-label">訂單金額</div>
+        <div class="pay-big" id="pay-order-total-text">$0</div>
+        <input id="pay-order-total" type="number" readonly />
 
-      <div class="calc-result">找零：<span id="pay-change-result">$0</span></div>
+        <div class="pay-label">實收金額</div>
+        <input id="pay-paid-amount" type="number" placeholder="請輸入收多少" oninput="updateChange()" />
 
-      <div class="editor-actions">
-        <button type="button" class="small-btn" onclick="confirmPay()">確認收款</button>
-        <button type="button" class="small-btn" onclick="closePayModal()">取消</button>
+        <div class="quick-cash">
+          <button type="button" onclick="setQuickCash(currentPayTotal)">剛好</button>
+          <button type="button" onclick="setQuickCash(100)">100</button>
+          <button type="button" onclick="setQuickCash(500)">500</button>
+          <button type="button" onclick="setQuickCash(1000)">1000</button>
+        </div>
+
+        <div class="calc-result">找零：<span id="pay-change-result">$0</span></div>
+
+        <div class="editor-actions">
+          <button type="button" class="small-btn" onclick="confirmPay()">確認收款</button>
+          <button type="button" class="small-btn" onclick="closePayModal()">取消</button>
+        </div>
+
+        <div class="money-note">今日錢櫃金額會用今天已收款訂單的「實收 - 找零」自動計算。</div>
+      </div>
+
+      <div class="keypad">
+        <div class="pay-label" style="margin-bottom:10px;">數字鍵盤</div>
+        <div class="keypad-grid">
+          <button type="button" class="key-btn" onclick="keypadInput('7')">7</button>
+          <button type="button" class="key-btn" onclick="keypadInput('8')">8</button>
+          <button type="button" class="key-btn" onclick="keypadInput('9')">9</button>
+
+          <button type="button" class="key-btn" onclick="keypadInput('4')">4</button>
+          <button type="button" class="key-btn" onclick="keypadInput('5')">5</button>
+          <button type="button" class="key-btn" onclick="keypadInput('6')">6</button>
+
+          <button type="button" class="key-btn" onclick="keypadInput('1')">1</button>
+          <button type="button" class="key-btn" onclick="keypadInput('2')">2</button>
+          <button type="button" class="key-btn" onclick="keypadInput('3')">3</button>
+
+          <button type="button" class="key-btn func" onclick="keypadClear()">清空</button>
+          <button type="button" class="key-btn" onclick="keypadInput('0')">0</button>
+          <button type="button" class="key-btn danger" onclick="keypadBackspace()">刪除</button>
+
+          <button type="button" class="key-btn func" onclick="setQuickCash(currentPayTotal)">剛好</button>
+          <button type="button" class="key-btn func" onclick="setRoundedCash(100)">補百</button>
+          <button type="button" class="key-btn func" onclick="setRoundedCash(1000)">補千</button>
+
+          <button type="button" class="key-btn confirm" style="grid-column:1 / -1;" onclick="confirmPay()">確認收款</button>
+        </div>
       </div>
     </div>
   </div>
@@ -239,16 +508,16 @@ function buildOrderHtml(o, type){
   if(type === "pending"){
     buttons = `
       <div class="action-row">
-        <button type="button" class="pay-btn" onclick="openPayModal('${o.id}', ${o.price})">💰 收款</button>
-        <button type="button" class="edit-btn" onclick="openEditModal('${o.id}')">✏️ 修改</button>
-        <button type="button" class="delete-btn" onclick="deleteOrder('${o.id}')">🗑 刪除</button>
+        <button type="button" class="pay-btn" onclick="openPayModal('${o.id}', ${o.price})">收款</button>
+        <button type="button" class="edit-btn" onclick="openEditModal('${o.id}')">修改</button>
+        <button type="button" class="delete-btn" onclick="deleteOrder('${o.id}')">刪除</button>
       </div>
     `;
   }
   if(type === "making"){
     buttons = `
       <div class="action-row">
-        <button type="button" class="done-btn" onclick="doneOrder('${o.id}')">✅ 完成</button>
+        <button type="button" class="done-btn" onclick="doneOrder('${o.id}')">完成</button>
       </div>
     `;
   }
@@ -267,6 +536,32 @@ function getTodayStart() {
   const d = new Date();
   d.setHours(0,0,0,0);
   return d.getTime();
+}
+
+function formatMoney(n){
+  return "$" + Number(n || 0).toLocaleString("zh-TW");
+}
+
+function updateCashDrawerStats(orders){
+  const todayStart = getTodayStart();
+
+  const paidTodayOrders = orders.filter(o =>
+    (o.createdAt || 0) >= todayStart &&
+    o.status !== "deleted" &&
+    Number(o.paidAmount || 0) > 0
+  );
+
+  const cashDrawerTotal = paidTodayOrders.reduce((sum, o) => {
+    return sum + (Number(o.paidAmount || 0) - Number(o.changeAmount || 0));
+  }, 0);
+
+  const paidAmountTotal = paidTodayOrders.reduce((sum, o) => {
+    return sum + Number(o.paidAmount || 0);
+  }, 0);
+
+  document.getElementById("cash-drawer-total").innerText = formatMoney(cashDrawerTotal);
+  document.getElementById("paid-order-count").innerText = String(paidTodayOrders.length);
+  document.getElementById("paid-amount-total").innerText = formatMoney(paidAmountTotal);
 }
 
 async function loadOrders(showMessage = false){
@@ -304,6 +599,8 @@ async function loadOrders(showMessage = false){
     document.getElementById("done").innerHTML =
       doneOrders.length ? doneOrders.map(o => buildOrderHtml(o, "done")).join("") : `<div class="empty-text">今天還沒有完成訂單</div>`;
 
+    updateCashDrawerStats(orders);
+
     if (showMessage) console.log("已刷新");
   } catch (err) {
     console.error("刷新失敗", err);
@@ -315,6 +612,7 @@ function openPayModal(id, total){
   currentPayId = id;
   currentPayTotal = Number(total || 0);
   document.getElementById("pay-order-total").value = currentPayTotal;
+  document.getElementById("pay-order-total-text").innerText = formatMoney(currentPayTotal);
   document.getElementById("pay-paid-amount").value = "";
   document.getElementById("pay-change-result").innerText = "$0";
   document.getElementById("pay-modal-bg").style.display = "flex";
@@ -329,7 +627,36 @@ function closePayModal(){
 function updateChange(){
   const paid = Number(document.getElementById("pay-paid-amount").value || 0);
   const change = Math.max(0, paid - currentPayTotal);
-  document.getElementById("pay-change-result").innerText = "$" + change;
+  document.getElementById("pay-change-result").innerText = formatMoney(change);
+}
+
+function keypadInput(value){
+  const input = document.getElementById("pay-paid-amount");
+  const current = String(input.value || "");
+  input.value = current + value;
+  updateChange();
+}
+
+function keypadClear(){
+  document.getElementById("pay-paid-amount").value = "";
+  updateChange();
+}
+
+function keypadBackspace(){
+  const input = document.getElementById("pay-paid-amount");
+  input.value = String(input.value || "").slice(0, -1);
+  updateChange();
+}
+
+function setQuickCash(amount){
+  document.getElementById("pay-paid-amount").value = Number(amount || 0);
+  updateChange();
+}
+
+function setRoundedCash(base){
+  const rounded = Math.ceil(currentPayTotal / base) * base;
+  document.getElementById("pay-paid-amount").value = rounded;
+  updateChange();
 }
 
 async function confirmPay(){
@@ -472,7 +799,7 @@ function recalcEditorTotal(){
   rows.forEach(row => {
     total += Number(row.querySelector(".row-price").value || 0);
   });
-  document.getElementById("editor-total").innerText = "$" + total;
+  document.getElementById("editor-total").innerText = formatMoney(total);
 }
 
 async function openEditModal(id){
