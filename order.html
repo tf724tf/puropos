@@ -17,41 +17,32 @@
       --danger: #dc2626;
       --shadow: 0 8px 24px rgba(0,0,0,0.06);
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
       background: var(--bg);
       color: var(--text);
     }
-
     .wrap {
       max-width: 980px;
       margin: 0 auto;
       padding: 24px 18px 40px;
     }
-
     .hero {
       text-align: center;
       margin-bottom: 18px;
     }
-
     .logo {
       font-size: 38px;
       font-weight: 900;
       letter-spacing: 0.5px;
       margin-bottom: 6px;
     }
-
     .sub {
       color: var(--muted);
       font-size: 16px;
     }
-
     .section {
       background: var(--card);
       border-radius: 18px;
@@ -60,25 +51,21 @@
       box-shadow: var(--shadow);
       border: 1px solid rgba(0,0,0,0.04);
     }
-
     .section-title {
       font-size: 18px;
       font-weight: 900;
       margin-bottom: 12px;
     }
-
     .type-tabs,
     .menu-tabs {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
     }
-
     .tab-btn,
     .add-btn,
     .submit-btn,
-    .remove-btn,
-    .back-btn {
+    .remove-btn {
       border: none;
       border-radius: 12px;
       min-height: 48px;
@@ -89,7 +76,6 @@
       touch-action: manipulation;
       transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
     }
-
     .tab-btn:active,
     .add-btn:active,
     .submit-btn:active,
@@ -97,21 +83,17 @@
     .size-card:active {
       transform: scale(0.98);
     }
-
-    .tab-btn,
-    .back-btn {
+    .tab-btn {
       background: #fff;
       border: 1px solid #d1d5db;
       color: var(--text);
       min-width: 92px;
     }
-
     .active {
       background: var(--primary) !important;
       color: #fff !important;
       border-color: var(--primary) !important;
     }
-
     .type-banner {
       display: inline-flex;
       align-items: center;
@@ -125,26 +107,22 @@
       font-size: 14px;
       border: 1px solid #fed7aa;
     }
-
     .menu-list {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
     }
-
     .menu-item {
       border: 1px solid var(--line);
       border-radius: 16px;
       padding: 14px;
       background: #fff;
     }
-
     .menu-title {
       font-size: 19px;
       font-weight: 900;
       margin-bottom: 4px;
     }
-
     .menu-desc {
       color: var(--muted);
       margin-bottom: 10px;
@@ -152,14 +130,12 @@
       line-height: 1.55;
       min-height: 44px;
     }
-
     .pizza-size-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       margin-top: 8px;
     }
-
     .size-card {
       background: #111;
       color: white;
@@ -172,24 +148,20 @@
       border: none;
       touch-action: manipulation;
     }
-
     .size-title {
       font-size: 16px;
       margin-bottom: 2px;
     }
-
     .size-sub {
       font-size: 11px;
       opacity: 0.82;
       margin-bottom: 4px;
     }
-
     .size-price {
       font-size: 18px;
       color: #fbbf24;
       font-weight: 900;
     }
-
     .drink-row {
       display: flex;
       align-items: center;
@@ -197,14 +169,12 @@
       gap: 10px;
       margin-bottom: 10px;
     }
-
     .drink-price {
       color: var(--accent);
       font-size: 20px;
       font-weight: 900;
       white-space: nowrap;
     }
-
     .add-btn {
       background: var(--primary);
       color: white;
@@ -214,13 +184,11 @@
       align-items: center;
       justify-content: center;
     }
-
     .cart-title {
       font-size: 22px;
       font-weight: 900;
       margin-bottom: 12px;
     }
-
     .cart-item {
       display: flex;
       align-items: center;
@@ -229,16 +197,13 @@
       border-bottom: 1px solid #f0f0f0;
       padding: 10px 0;
     }
-
     .cart-item:last-child {
       border-bottom: none;
     }
-
     .cart-item-text {
       font-size: 15px;
       line-height: 1.5;
     }
-
     .remove-btn {
       background: #fff;
       color: var(--danger);
@@ -249,7 +214,6 @@
       font-size: 14px;
       flex-shrink: 0;
     }
-
     .total-wrap {
       display: flex;
       justify-content: space-between;
@@ -258,25 +222,21 @@
       padding-top: 14px;
       border-top: 1px dashed #ddd;
     }
-
     .total-label {
       font-size: 16px;
       color: var(--muted);
       font-weight: 700;
     }
-
     .total {
       font-size: 28px;
       font-weight: 900;
       color: var(--accent);
     }
-
     .submit-row {
       margin-top: 14px;
       display: flex;
       justify-content: flex-end;
     }
-
     .submit-btn {
       background: var(--green);
       color: white;
@@ -284,7 +244,6 @@
       width: auto;
       padding: 10px 18px;
     }
-
     .success-box {
       display: none;
       background: #ecfdf3;
@@ -299,64 +258,51 @@
       line-height: 1.7;
       box-shadow: var(--shadow);
     }
-
     .muted {
       color: #777;
       font-size: 15px;
     }
-
     @media (max-width: 860px) {
       .menu-list {
         grid-template-columns: 1fr;
       }
     }
-
     @media (max-width: 700px) {
       .wrap {
         padding: 16px 12px 28px;
       }
-
       .logo {
         font-size: 32px;
       }
-
       .sub {
         font-size: 15px;
       }
-
       .pizza-size-grid {
         grid-template-columns: 1fr 1fr;
       }
-
       .cart-item {
         align-items: flex-start;
         flex-direction: column;
       }
-
       .remove-btn {
         align-self: flex-end;
       }
-
       .submit-row {
         justify-content: stretch;
       }
-
       .submit-btn {
         width: 100%;
       }
     }
-
     @media (max-width: 480px) {
       .pizza-size-grid {
         grid-template-columns: 1fr;
       }
-
       .type-tabs,
       .menu-tabs {
         display: grid;
         grid-template-columns: 1fr 1fr;
       }
-
       .tab-btn {
         width: 100%;
         min-width: 0;
@@ -418,29 +364,39 @@
     let cart = [];
     let orderType = "內用";
 
+    function normalizeCategory(value) {
+      const text = String(value || "").trim().toLowerCase();
+
+      if (["pizza", "披薩"].includes(text)) return "pizza";
+      if (["drink", "drinks", "飲料", "冰淇淋"].includes(text)) return "drink";
+
+      return text;
+    }
+
     async function loadProducts() {
       try {
         const res = await fetch("/api/products");
         const data = await res.json();
 
+        console.log("api/products =", data);
+
         if (!res.ok) {
-          console.error("讀取商品失敗:", data);
           alert(data.error || "讀取商品失敗");
           return;
         }
 
         const pizzas = data
-          .filter((p) => p.category === "pizza")
+          .filter((p) => normalizeCategory(p.category) === "pizza")
           .map((p) => ({
             id: p.id,
             name: p.name,
             desc: p.description || "",
-            square: Number(p.price_square ?? p.price ?? 0),
-            round: Number(p.price_round ?? p.price ?? 0)
+            square: Number(p.price_square ?? p.square ?? p.price ?? 0),
+            round: Number(p.price_round ?? p.round ?? p.price ?? 0)
           }));
 
         const drinks = data
-          .filter((p) => p.category === "drink")
+          .filter((p) => normalizeCategory(p.category) === "drink")
           .map((p) => ({
             id: p.id,
             name: p.name,
