@@ -659,11 +659,6 @@ app.get("/report/overview", requireReportToken, async (req, res) => {
     res.status(500).json({ error: "累計摘要失敗" });
   }
 });
-  } catch (err) {
-    console.error("累計摘要失敗:", err);
-    res.status(500).json({ error: "累計摘要失敗" });
-  }
-});
 
 app.get("/report/daily-summary", requireReportToken, async (req, res) => {
   try {
