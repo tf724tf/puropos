@@ -4,212 +4,377 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PURO Pizza 點餐</title>
-
   <style>
+    :root {
+      --bg: #f6f4ef;
+      --card: #ffffff;
+      --text: #1f1f1f;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #111111;
+      --accent: #c95a00;
+      --green: #1f9d55;
+      --danger: #dc2626;
+      --shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
-      background: #f5f5f5;
-      color: #222;
+      background: var(--bg);
+      color: var(--text);
     }
 
     .wrap {
-      max-width: 960px;
+      max-width: 980px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 24px 18px 40px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 18px;
     }
 
     .logo {
-      text-align: center;
-      font-size: 40px;
+      font-size: 38px;
       font-weight: 900;
-      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
     }
 
     .sub {
-      text-align: center;
-      color: #666;
-      margin-bottom: 16px;
-      font-size: 18px;
+      color: var(--muted);
+      font-size: 16px;
     }
 
     .section {
-      background: white;
-      border-radius: 16px;
-      padding: 16px;
+      background: var(--card);
+      border-radius: 18px;
+      padding: 18px;
       margin-bottom: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.04);
     }
 
-    /* ===== 核心：標準按鈕尺寸 ===== */
+    .section-title {
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .type-tabs,
+    .menu-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
     .tab-btn,
     .add-btn,
     .submit-btn,
     .remove-btn,
     .back-btn {
       border: none;
-      border-radius: 10px;
-      padding: 8px 12px;
+      border-radius: 12px;
       min-height: 48px;
+      padding: 8px 14px;
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-    }
-
-    button {
-      margin: 4px;
       touch-action: manipulation;
+      transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
     }
 
-    .tab-btn {
-      background: white;
-      border: 1px solid #ccc;
+    .tab-btn:active,
+    .add-btn:active,
+    .submit-btn:active,
+    .remove-btn:active,
+    .size-card:active {
+      transform: scale(0.98);
+    }
+
+    .tab-btn,
+    .back-btn {
+      background: #fff;
+      border: 1px solid #d1d5db;
+      color: var(--text);
+      min-width: 92px;
     }
 
     .active {
-      background: black !important;
-      color: white !important;
+      background: var(--primary) !important;
+      color: #fff !important;
+      border-color: var(--primary) !important;
     }
 
-    .type-tabs,
-    .menu-tabs {
+    .type-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-weight: 700;
+      margin-bottom: 14px;
+      font-size: 14px;
+      border: 1px solid #fed7aa;
+    }
+
+    .menu-list {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 14px;
     }
 
     .menu-item {
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
       background: #fff;
     }
 
     .menu-title {
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 900;
       margin-bottom: 4px;
     }
 
     .menu-desc {
+      color: var(--muted);
+      margin-bottom: 10px;
       font-size: 14px;
-      color: #666;
-      margin-bottom: 8px;
+      line-height: 1.55;
+      min-height: 44px;
     }
 
     .pizza-size-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 10px;
+      margin-top: 8px;
     }
 
-    /* Pizza 尺寸按鈕 */
     .size-card {
       background: #111;
       color: white;
-      border-radius: 10px;
-      padding: 8px;
+      border-radius: 14px;
+      padding: 10px 10px;
       min-height: 48px;
       text-align: center;
+      cursor: pointer;
       font-weight: 700;
       border: none;
+      touch-action: manipulation;
     }
 
     .size-title {
       font-size: 16px;
+      margin-bottom: 2px;
     }
 
     .size-sub {
-      font-size: 12px;
-      opacity: 0.8;
+      font-size: 11px;
+      opacity: 0.82;
+      margin-bottom: 4px;
     }
 
     .size-price {
       font-size: 18px;
       color: #fbbf24;
+      font-weight: 900;
     }
 
     .drink-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
     .drink-price {
-      font-size: 18px;
+      color: var(--accent);
+      font-size: 20px;
       font-weight: 900;
-      color: #c95a00;
+      white-space: nowrap;
     }
 
     .add-btn {
-      background: black;
+      background: var(--primary);
       color: white;
-    }
-
-    .remove-btn {
-      background: #dc2626;
-      color: white;
-      font-size: 14px;
-    }
-
-    .submit-btn {
-      width: 100%;
-      background: #1f9d55;
-      color: white;
-      margin-top: 10px;
+      min-width: 112px;
+      width: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .cart-title {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 900;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .cart-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      padding: 10px 0;
+    }
+
+    .cart-item:last-child {
+      border-bottom: none;
+    }
+
+    .cart-item-text {
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .remove-btn {
+      background: #fff;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+      min-width: 72px;
+      padding: 6px 12px;
+      min-height: 40px;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .total-wrap {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #ddd;
+    }
+
+    .total-label {
+      font-size: 16px;
+      color: var(--muted);
+      font-weight: 700;
     }
 
     .total {
-      font-size: 22px;
+      font-size: 28px;
       font-weight: 900;
-      margin-top: 8px;
-      color: #c95a00;
+      color: var(--accent);
     }
 
-    .muted {
-      color: #777;
-      font-size: 14px;
+    .submit-row {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .submit-btn {
+      background: var(--green);
+      color: white;
+      min-width: 160px;
+      width: auto;
+      padding: 10px 18px;
     }
 
     .success-box {
       display: none;
-      background: #e8f7e8;
-      border: 1px solid #9fd29f;
-      border-radius: 12px;
-      padding: 16px;
+      background: #ecfdf3;
+      border: 1px solid #a7f3d0;
+      border-radius: 16px;
+      padding: 18px;
       text-align: center;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 800;
       color: #0f7a0f;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
+      line-height: 1.7;
+      box-shadow: var(--shadow);
+    }
+
+    .muted {
+      color: #777;
+      font-size: 15px;
+    }
+
+    @media (max-width: 860px) {
+      .menu-list {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 700px) {
-      .type-tabs,
-      .menu-tabs,
+      .wrap {
+        padding: 16px 12px 28px;
+      }
+
+      .logo {
+        font-size: 32px;
+      }
+
+      .sub {
+        font-size: 15px;
+      }
+
+      .pizza-size-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .cart-item {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .remove-btn {
+        align-self: flex-end;
+      }
+
+      .submit-row {
+        justify-content: stretch;
+      }
+
+      .submit-btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
       .pizza-size-grid {
         grid-template-columns: 1fr;
+      }
+
+      .type-tabs,
+      .menu-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .tab-btn {
+        width: 100%;
+        min-width: 0;
       }
     }
   </style>
 </head>
-
 <body>
   <div class="wrap">
-    <div class="logo">🍕 PURO Pizza</div>
-    <div class="sub">選好後送出，請到櫃台付款</div>
+    <div class="hero">
+      <div class="logo">🍕 PURO Pizza</div>
+      <div class="sub">選好後送出，請到櫃台付款</div>
+    </div>
 
     <div id="success-box" class="success-box"></div>
 
     <div class="section">
-      <div style="font-weight:900;margin-bottom:8px;">請先選擇用餐方式</div>
+      <div class="section-title">請先選擇用餐方式</div>
       <div class="type-tabs">
         <button id="type-dinein" class="tab-btn active" onclick="setOrderType('內用')">內用</button>
         <button id="type-takeout" class="tab-btn" onclick="setOrderType('外帶')">外帶</button>
@@ -217,21 +382,29 @@
     </div>
 
     <div class="section">
+      <div class="type-banner">目前點餐類型：<span id="current-order-type">內用</span></div>
       <div class="menu-tabs">
         <button id="tab-pizza" class="tab-btn active" onclick="switchTab('pizza')">Pizza</button>
-        <button id="tab-drink" class="tab-btn" onclick="switchTab('drink')">飲料</button>
+        <button id="tab-drink" class="tab-btn" onclick="switchTab('drink')">飲料 / 冰淇淋</button>
       </div>
     </div>
 
     <div class="section">
-      <div id="menu-list"></div>
+      <div id="menu-list" class="menu-list"></div>
     </div>
 
     <div class="section">
       <div class="cart-title">購物車</div>
       <div id="cart-list" class="muted">尚未加入任何品項</div>
-      <div class="total">總價：<span id="cart-total">$0</span></div>
-      <button class="submit-btn" onclick="submitOrder()">送出訂單</button>
+
+      <div class="total-wrap">
+        <div class="total-label">總價</div>
+        <div class="total"><span id="cart-total">$0</span></div>
+      </div>
+
+      <div class="submit-row">
+        <button class="submit-btn" onclick="submitOrder()">送出訂單</button>
+      </div>
     </div>
   </div>
 
@@ -246,6 +419,7 @@
       orderType = type;
       document.getElementById("type-dinein").classList.toggle("active", type === "內用");
       document.getElementById("type-takeout").classList.toggle("active", type === "外帶");
+      document.getElementById("current-order-type").innerText = type;
     }
 
     function switchTab(tab) {
@@ -267,11 +441,13 @@
             <div class="pizza-size-grid">
               <button class="size-card" onclick="addPizza('${item.id}','方形',${item.square})">
                 <div class="size-title">方形</div>
+                <div class="size-sub">15×24CM</div>
                 <div class="size-price">$${item.square}</div>
               </button>
 
               <button class="size-card" onclick="addPizza('${item.id}','圓形',${item.round})">
                 <div class="size-title">圓形</div>
+                <div class="size-sub">9吋</div>
                 <div class="size-price">$${item.round}</div>
               </button>
             </div>
@@ -284,7 +460,7 @@
               <div class="menu-title">${item.name}</div>
               <div class="drink-price">$${item.price}</div>
             </div>
-            <button class="add-btn" onclick="addDrink('${item.id}',${item.price})">加入</button>
+            <button class="add-btn" onclick="addDrink('${item.id}',${item.price})">加入購物車</button>
           </div>
         `).join("");
       }
@@ -292,13 +468,21 @@
 
     function addPizza(id, size, price) {
       const item = MENU.pizzas.find(p => p.id === id);
-      cart.push({ name: item.name, size, price });
+      cart.push({
+        name: item.name,
+        size,
+        price
+      });
       renderCart();
     }
 
     function addDrink(id, price) {
       const item = MENU.drinks.find(d => d.id === id);
-      cart.push({ name: item.name, size: "單品", price });
+      cart.push({
+        name: item.name,
+        size: "單品",
+        price
+      });
       renderCart();
     }
 
@@ -309,40 +493,57 @@
 
     function renderCart() {
       const list = document.getElementById("cart-list");
-      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      const total = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
       document.getElementById("cart-total").innerText = "$" + total;
 
       if (!cart.length) {
         list.innerHTML = "尚未加入任何品項";
+        list.className = "muted";
         return;
       }
 
+      list.className = "";
       list.innerHTML = cart.map((item, index) => `
         <div class="cart-item">
-          ${item.name}｜${item.size}｜$${item.price}
+          <div class="cart-item-text">${item.name}｜${item.size}｜$${item.price}</div>
           <button class="remove-btn" onclick="removeCartItem(${index})">刪除</button>
         </div>
       `).join("");
     }
 
     async function submitOrder() {
-      if (!cart.length) return alert("請先加入品項");
+      if (!cart.length) {
+        alert("請先加入品項");
+        return;
+      }
 
-      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      const total = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
 
       const res = await fetch("/order", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: cart, price: total, orderType })
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          items: cart,
+          price: total,
+          orderType
+        })
       });
 
       const data = await res.json();
 
-      if (!res.ok) return alert(data.error);
+      if (!res.ok) {
+        alert(data.error || "送出失敗");
+        return;
+      }
 
       document.getElementById("success-box").style.display = "block";
-      document.getElementById("success-box").innerHTML =
-        `訂單完成｜號碼 ${data.id}`;
+      document.getElementById("success-box").innerHTML = `
+        訂單已送出<br>
+        取餐號碼：${data.id}<br>
+        類型：${orderType}
+      `;
 
       cart = [];
       renderCart();
