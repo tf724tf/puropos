@@ -408,12 +408,52 @@
     </div>
   </div>
 
-  <script src="/menu.js"></script>
   <script>
-    const MENU = window.PURO_MENU;
+    let MENU = {
+      pizzas: [],
+      drinks: []
+    };
+
     let currentTab = "pizza";
     let cart = [];
     let orderType = "內用";
+
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/products");
+        const data = await res.json();
+
+        if (!res.ok) {
+          console.error("讀取商品失敗:", data);
+          alert(data.error || "讀取商品失敗");
+          return;
+        }
+
+        const pizzas = data
+          .filter((p) => p.category === "pizza")
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            desc: p.description || "",
+            square: Number(p.price_square ?? p.price ?? 0),
+            round: Number(p.price_round ?? p.price ?? 0)
+          }));
+
+        const drinks = data
+          .filter((p) => p.category === "drink")
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            price: Number(p.price ?? 0)
+          }));
+
+        MENU = { pizzas, drinks };
+        renderMenu();
+      } catch (err) {
+        console.error("載入商品失敗:", err);
+        alert("載入商品失敗");
+      }
+    }
 
     function setOrderType(type) {
       orderType = type;
@@ -433,6 +473,11 @@
       const list = document.getElementById("menu-list");
 
       if (currentTab === "pizza") {
+        if (!MENU.pizzas.length) {
+          list.innerHTML = `<div class="muted">目前沒有 Pizza 商品</div>`;
+          return;
+        }
+
         list.innerHTML = MENU.pizzas.map(item => `
           <div class="menu-item">
             <div class="menu-title">${item.name}</div>
@@ -454,6 +499,11 @@
           </div>
         `).join("");
       } else {
+        if (!MENU.drinks.length) {
+          list.innerHTML = `<div class="muted">目前沒有飲料 / 冰淇淋商品</div>`;
+          return;
+        }
+
         list.innerHTML = MENU.drinks.map(item => `
           <div class="menu-item">
             <div class="drink-row">
@@ -468,6 +518,8 @@
 
     function addPizza(id, size, price) {
       const item = MENU.pizzas.find(p => p.id === id);
+      if (!item) return;
+
       cart.push({
         name: item.name,
         size,
@@ -478,6 +530,8 @@
 
     function addDrink(id, price) {
       const item = MENU.drinks.find(d => d.id === id);
+      if (!item) return;
+
       cart.push({
         name: item.name,
         size: "單品",
@@ -550,7 +604,7 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    renderMenu();
+    loadProducts();
     renderCart();
   </script>
 </body>
