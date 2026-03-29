@@ -745,29 +745,24 @@ app.get("/report/history", requireReportToken, async (req, res) => {
 app.get("/report/items", requireReportToken, async (req, res) => {
   try {
     const month = req.query.month;
-    let result;
+
+    let query = supabase
+      .from("orders")
+      .select("items")
+      .eq("status", "done");
 
     if (month) {
       const range = getMonthRange(month);
-      result = await pool.query(
-        `SELECT items
-         FROM orders
-         WHERE status = 'done'
-           AND created_at >= $1
-           AND created_at <= $2`,
-        [range.startMs, range.endMs]
-      );
-    } else {
-      result = await pool.query(
-        `SELECT items
-         FROM orders
-         WHERE status = 'done'`
-      );
+      query = query.gte("created_at", range.startMs).lte("created_at", range.endMs);
     }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
 
     const map = {};
 
-    result.rows.forEach((order) => {
+    (data || []).forEach((order) => {
       const items = order.items || [];
       items.forEach((item) => {
         const key = `${item.name}｜${item.size}`;
@@ -784,6 +779,13 @@ app.get("/report/items", requireReportToken, async (req, res) => {
       });
     });
 
+    const rows = Object.values(map).sort((a, b) => b.qty - a.qty);
+    res.json(rows);
+  } catch (err) {
+    console.error("熱銷分析失敗:", err);
+    res.status(500).json({ error: "熱銷分析失敗" });
+  }
+});
     const rows = Object.values(map).sort((a, b) => b.qty - a.qty);
     res.json(rows);
   } catch (err) {
