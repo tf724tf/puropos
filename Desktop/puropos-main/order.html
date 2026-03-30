@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PURO Pizza 點餐</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --card: #ffffff;
+      --text: #1f1f1f;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #111111;
+      --accent: #c95a00;
+      --green: #1f9d55;
+      --danger: #dc2626;
+      --shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 18px 40px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .logo {
+      font-size: 38px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .section {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .type-tabs,
+    .menu-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tab-btn,
+    .add-btn,
+    .submit-btn,
+    .remove-btn,
+    .back-btn {
+      border: none;
+      border-radius: 12px;
+      min-height: 48px;
+      padding: 8px 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .tab-btn:active,
+    .add-btn:active,
+    .submit-btn:active,
+    .remove-btn:active,
+    .size-card:active {
+      transform: scale(0.98);
+    }
+
+    .tab-btn,
+    .back-btn {
+      background: #fff;
+      border: 1px solid #d1d5db;
+      color: var(--text);
+      min-width: 92px;
+    }
+
+    .active {
+      background: var(--primary) !important;
+      color: #fff !important;
+      border-color: var(--primary) !important;
+    }
+
+    .type-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-weight: 700;
+      margin-bottom: 14px;
+      font-size: 14px;
+      border: 1px solid #fed7aa;
+    }
+
+    .menu-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .menu-item {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .menu-title {
+      font-size: 19px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .menu-desc {
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-size: 14px;
+      line-height: 1.55;
+      min-height: 22px;
+    }
+
+    .pizza-size-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .size-card {
+      background: #111;
+      color: white;
+      border-radius: 14px;
+      padding: 10px 10px;
+      min-height: 48px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 700;
+      border: none;
+      touch-action: manipulation;
+    }
+
+    .size-title {
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+
+    .size-sub {
+      font-size: 11px;
+      opacity: 0.82;
+      margin-bottom: 4px;
+    }
+
+    .size-price {
+      font-size: 18px;
+      color: #fbbf24;
+      font-weight: 900;
+    }
+
+    .single-price-box {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .single-price {
+      color: var(--accent);
+      font-size: 20px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .cart-title {
+      font-size: 22px;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .cart-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      padding: 10px 0;
+    }
+
+    .cart-item:last-child {
+      border-bottom: none;
+    }
+
+    .cart-item-text {
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .remove-btn {
+      background: #fff;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+      min-width: 72px;
+      padding: 6px 12px;
+      min-height: 40px;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .total-wrap {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #ddd;
+    }
+
+    .total-label {
+      font-size: 16px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .total {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    .submit-row {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .submit-btn {
+      background: var(--green);
+      color: white;
+      min-width: 160px;
+      width: auto;
+      padding: 10px 18px;
+    }
+
+    .success-box {
+      display: none;
+      background: #ecfdf3;
+      border: 1px solid #a7f3d0;
+      border-radius: 16px;
+      padding: 18px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f7a0f;
+      margin-bottom: 18px;
+      line-height: 1.7;
+      box-shadow: var(--shadow);
+    }
+
+    .muted {
+      color: #777;
+      font-size: 15px;
+    }
+
+    @media (max-width: 860px) {
+      .menu-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .wrap {
+        padding: 16px 12px 28px;
+      }
+
+      .logo {
+        font-size: 32px;
+      }
+
+      .sub {
+        font-size: 15px;
+      }
+
+      .pizza-size-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .cart-item {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .remove-btn {
+        align-self: flex-end;
+      }
+
+      .submit-row {
+        justify-content: stretch;
+      }
+
+      .submit-btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .pizza-size-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .type-tabs,
+      .menu-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .tab-btn {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="logo">🍕 PURO Pizza</div>
+      <div class="sub">選好後送出，請到櫃台付款</div>
+    </div>
+
+    <div id="success-box" class="success-box"></div>
+
+    <div class="section">
+      <div class="section-title">請先選擇用餐方式</div>
+      <div class="type-tabs">
+        <button id="type-dinein" class="tab-btn active" onclick="setOrderType('內用')">內用</button>
+        <button id="type-takeout" class="tab-btn" onclick="setOrderType('外帶')">外帶</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="type-banner">目前點餐類型：<span id="current-order-type">內用</span></div>
+      <div id="category-tabs" class="menu-tabs"></div>
+    </div>
+
+    <div class="section">
+      <div id="menu-list" class="menu-list"></div>
+    </div>
+
+    <div class="section">
+      <div class="cart-title">購物車</div>
+      <div id="cart-list" class="muted">尚未加入任何品項</div>
+
+      <div class="total-wrap">
+        <div class="total-label">總價</div>
+        <div class="total"><span id="cart-total">$0</span></div>
+      </div>
+
+      <div class="submit-row">
+        <button class="submit-btn" onclick="submitOrder()">送出訂單</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let categories = [];
+    let products = [];
+    let currentCategory = "";
+    let cart = [];
+    let orderType = "內用";
+
+    function money(n) {
+      return "$" + Number(n || 0);
+    }
+
+    function isPizzaProduct(product) {
+      const slug = String(product.category || "").toLowerCase();
+      return slug === "pizza" || (product.price_square != null && product.price_round != null);
+    }
+
+    function setOrderType(type) {
+      orderType = type;
+      document.getElementById("type-dinein").classList.toggle("active", type === "內用");
+      document.getElementById("type-takeout").classList.toggle("active", type === "外帶");
+      document.getElementById("current-order-type").innerText = type;
+    }
+
+    async function loadCategories() {
+      const res = await fetch("/api/categories");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "讀取分類失敗");
+      }
+
+      categories = data || [];
+    }
+
+    async function loadProducts() {
+      const res = await fetch("/api/products");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "讀取商品失敗");
+      }
+
+      products = data || [];
+    }
+
+    function renderCategoryTabs() {
+      const box = document.getElementById("category-tabs");
+
+      if (!categories.length) {
+        box.innerHTML = `<div class="muted">目前沒有分類</div>`;
+        return;
+      }
+
+      if (!currentCategory) {
+        currentCategory = categories[0].slug;
+      }
+
+      box.innerHTML = categories.map(cat => `
+        <button
+          class="tab-btn ${currentCategory === cat.slug ? "active" : ""}"
+          onclick="switchCategory('${cat.slug}')"
+        >
+          ${cat.name}
+        </button>
+      `).join("");
+    }
+
+    function switchCategory(slug) {
+      currentCategory = slug;
+      renderCategoryTabs();
+      renderMenu();
+    }
+
+    function renderMenu() {
+      const list = document.getElementById("menu-list");
+
+      const filtered = products.filter(p => String(p.category || "").toLowerCase() === String(currentCategory || "").toLowerCase());
+
+      if (!filtered.length) {
+        list.innerHTML = `<div class="muted">這個分類目前沒有商品</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(item => {
+        if (isPizzaProduct(item)) {
+          return `
+            <div class="menu-item">
+              <div class="menu-title">${item.name || ""}</div>
+              <div class="menu-desc">${item.description || ""}</div>
+
+              <div class="pizza-size-grid">
+                <button class="size-card" onclick="addPizza('${item.id}', '方形', ${Number(item.price_square || 0)})">
+                  <div class="size-title">方形</div>
+                  <div class="size-sub">15×24CM</div>
+                  <div class="size-price">${money(item.price_square || 0)}</div>
+                </button>
+
+                <button class="size-card" onclick="addPizza('${item.id}', '圓形', ${Number(item.price_round || 0)})">
+                  <div class="size-title">圓形</div>
+                  <div class="size-sub">9吋</div>
+                  <div class="size-price">${money(item.price_round || 0)}</div>
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="menu-item">
+            <div class="menu-title">${item.name || ""}</div>
+            <div class="menu-desc">${item.description || ""}</div>
+
+            <div class="single-price-box">
+              <div class="single-price">${money(item.price || 0)}</div>
+              <button class="add-btn" onclick="addSingle('${item.id}', ${Number(item.price || 0)})">加入購物車</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function addPizza(id, size, price) {
+      const item = products.find(p => String(p.id) === String(id));
+      if (!item) return;
+
+      cart.push({
+        name: item.name,
+        size,
+        price: Number(price || 0)
+      });
+
+      renderCart();
+    }
+
+    function addSingle(id, price) {
+      const item = products.find(p => String(p.id) === String(id));
+      if (!item) return;
+
+      cart.push({
+        name: item.name,
+        size: "單品",
+        price: Number(price || 0)
+      });
+
+      renderCart();
+    }
+
+    function removeCartItem(index) {
+      cart.splice(index, 1);
+      renderCart();
+    }
+
+    function renderCart() {
+      const list = document.getElementById("cart-list");
+      const total = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+      document.getElementById("cart-total").innerText = money(total);
+
+      if (!cart.length) {
+        list.innerHTML = "尚未加入任何品項";
+        list.className = "muted";
+        return;
+      }
+
+      list.className = "";
+      list.innerHTML = cart.map((item, index) => `
+        <div class="cart-item">
+          <div class="cart-item-text">${item.name}｜${item.size}｜${money(item.price)}</div>
+          <button class="remove-btn" onclick="removeCartItem(${index})">刪除</button>
+        </div>
+      `).join("");
+    }
+
+    async function submitOrder() {
+      if (!cart.length) {
+        alert("請先加入品項");
+        return;
+      }
+
+      const total = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+
+      const res = await fetch("/order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          items: cart,
+          price: total,
+          orderType
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "送出失敗");
+        return;
+      }
+
+      document.getElementById("success-box").style.display = "block";
+      document.getElementById("success-box").innerHTML = `
+        訂單已送出<br>
+        取餐號碼：${data.id}<br>
+        類型：${orderType}
+      `;
+
+      cart = [];
+      renderCart();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function initPage() {
+      try {
+        await loadCategories();
+        await loadProducts();
+        renderCategoryTabs();
+        renderMenu();
+        renderCart();
+      } catch (err) {
+        console.error(err);
+        document.getElementById("menu-list").innerHTML = `<div class="muted">載入商品失敗</div>`;
+      }
+    }
+
+    initPage();
+  </script>
+</body>
+</html>
